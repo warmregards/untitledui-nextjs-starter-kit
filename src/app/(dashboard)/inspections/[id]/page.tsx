@@ -507,7 +507,8 @@ export default function InspectionDetailPage({ params }: { params: Promise<{ id:
     const isOrigination = inspection.workflow === "ORIGINATION_MF";
     const isServicing = inspection.workflow === "SERVICING_MBA";
     const isUrgent = inspection.priority === "Urgent";
-    const canEdit = inspection.status === "In Progress" && isInspector;
+    // Allow editing when status is "In Progress" (for both roles during development)
+    const canEdit = inspection.status === "In Progress";
     const canReview = inspection.status === "Pending Review" && isAdmin;
 
     // =========================================================================

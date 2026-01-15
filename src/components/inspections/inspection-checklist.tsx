@@ -749,12 +749,33 @@ export function InspectionChecklist({
 
     return (
         <div className="space-y-6">
+            {/* Read-Only Banner (Completed/Scheduled inspections) */}
+            {!isEditable && (
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                    <div className="flex items-center gap-3">
+                        <div className="flex size-10 items-center justify-center rounded-full bg-blue-100">
+                            <CheckCircle className="size-5 text-blue-600" />
+                        </div>
+                        <div>
+                            <p className="font-medium text-blue-900">
+                                {inspection.status === "Completed" ? "Inspection Completed" : "View Only Mode"}
+                            </p>
+                            <p className="text-sm text-blue-700 mt-0.5">
+                                {inspection.status === "Completed"
+                                    ? "This inspection has been completed and submitted. No changes can be made."
+                                    : "This inspection is not currently in progress. Checklist is read-only."}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-lg font-semibold text-gray-900">Inspection Checklist</h2>
                     <p className="text-sm text-gray-500 mt-0.5">
-                        Complete all items in each room
+                        {isEditable ? "Complete all items in each room" : "Review the inspection results below"}
                     </p>
                 </div>
 

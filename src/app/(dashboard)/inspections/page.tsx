@@ -500,9 +500,12 @@ function InspectionTableRow({
 // Map View Components (Cards + Map)
 // ============================================================================
 
+/**
+ * Map Card - Horizontal layout matching Table View visual fidelity
+ */
 function InspectionCard({ inspection, isAdmin }: { inspection: Inspection; isAdmin: boolean }) {
-    const scheduledDate = new Date(inspection.scheduledDate);
     const isUrgent = inspection.priority === "Urgent";
+    const imageUrl = inspection.property?.imageUrl || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=100&h=100&fit=crop";
 
     // Action label for card
     const getActionLabel = (): string => {
@@ -513,40 +516,162 @@ function InspectionCard({ inspection, isAdmin }: { inspection: Inspection; isAdm
     };
 
     return (
-        <Link href={`/inspections/${inspection.id}`} className="block group">
-            <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all">
-                <div className="flex items-start gap-4">
-                    {/* Workflow Icon - Monochrome */}
-                    <WorkflowIcon workflow={inspection.workflow} />
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all">
+            <div className="flex items-center gap-4 p-4">
+                {/* Left - Property Image */}
+                <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 shrink-0 ring-1 ring-gray-200">
+                    <PropertyImage
+                        src={imageUrl}
+                        alt={inspection.property?.address || "Property"}
+                        className="w-full h-full"
+                    />
+                </div>
 
-                    {/* Date Box */}
-                    <DateBox date={scheduledDate} />
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-gray-900 text-sm truncate">
-                            {inspection.property?.address || `Property ${inspection.propertyId}`}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-1.5 text-sm text-gray-500">
-                            <span>{formatTime(inspection.scheduledTime)}</span>
-                            <span className="text-gray-300">•</span>
-                            <GrayBadge>{inspection.type}</GrayBadge>
-                        </div>
-                    </div>
-
-                    {/* Status + Urgent + Action */}
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                        <div className="flex items-center gap-2">
-                            <StatusBadge status={inspection.status} />
-                            {isUrgent && <UrgentBadge />}
-                        </div>
-                        <span className="text-xs font-medium text-gray-500 group-hover:text-brand-600 transition-colors">
-                            {getActionLabel()} →
-                        </span>
+                {/* Middle - Content */}
+                <div className="flex-1 min-w-0">
+                    {/* Row 1: Address */}
+                    <h3 className="font-semibold text-gray-900 text-sm truncate">
+                        {inspection.property?.address || `Property ${inspection.propertyId}`}
+                    </h3>
+                    {/* Row 2: Badge Container */}
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        <GrayBadge>{inspection.type}</GrayBadge>
+                        <StatusBadge status={inspection.status} />
+                        {isUrgent && <UrgentBadge />}
                     </div>
                 </div>
+
+                {/* Right - CTA Button */}
+                <Link href={`/inspections/${inspection.id}`} className="shrink-0">
+                    <button className="px-4 py-2 text-sm font-medium text-gray-700 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 transition-colors">
+                        {getActionLabel()}
+                    </button>
+                </Link>
             </div>
-        </Link>
+        </div>
+    );
+}
+
+/**
+ * Map Marker - Pastel circle with icon
+ */
+function MapMarker({
+    status,
+    isUrgent,
+    style,
+}: {
+    status: InspectionStatus;
+    isUrgent?: boolean;
+    style?: React.CSSProperties;
+}) {
+    // Pastel color mapping
+    const getMarkerConfig = () => {
+        if (isUrgent) {
+            return {
+                bg: "bg-orange-100",
+                border: "border-orange-200",
+                icon: Zap,
+                iconColor: "text-orange-600",
+                pulse: true,
+            };
+        }
+        switch (status) {
+            case "Scheduled":
+                return {
+                    bg: "bg-blue-100",
+                    border: "border-blue-200",
+                    icon: Clock,
+                    iconColor: "text-blue-600",
+                    pulse: false,
+                };
+            case "In Progress":
+                return {
+                    bg: "bg-indigo-100",
+                    border: "border-indigo-200",
+                    icon: PlayCircle,
+                    iconColor: "text-indigo-600",
+                    pulse: true,
+                };
+            case "Pending Review":
+                return {
+                    bg: "bg-amber-100",
+                    border: "border-amber-200",
+                    icon: Clock,
+                    iconColor: "text-amber-600",
+                    pulse: false,
+                };
+            case "Completed":
+                return {
+                    bg: "bg-gray-100",
+                    border: "border-gray-300",
+                    icon: CheckCircle2,
+                    iconColor: "text-gray-500",
+                    pulse: false,
+                };
+            default:
+                return {
+                    bg: "bg-gray-100",
+                    border: "border-gray-300",
+                    icon: MapPin,
+                    iconColor: "text-gray-500",
+                    pulse: false,
+                };
+        }
+    };
+
+    const config = getMarkerConfig();
+    const Icon = config.icon;
+
+    return (
+        <div className="absolute group cursor-pointer" style={style}>
+            <div
+                className={cx(
+                    "w-10 h-10 rounded-full border-2 shadow-md flex items-center justify-center transition-transform hover:scale-110",
+                    config.bg,
+                    config.border,
+                    config.pulse && "animate-pulse"
+                )}
+            >
+                <Icon className={cx("size-5", config.iconColor)} />
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Legend Item - Pastel circle matching map markers
+ */
+function LegendItem({
+    label,
+    count,
+    bgColor,
+    borderColor,
+    icon: Icon,
+    iconColor,
+}: {
+    label: string;
+    count?: number;
+    bgColor: string;
+    borderColor: string;
+    icon: typeof Clock;
+    iconColor: string;
+}) {
+    return (
+        <div className="flex items-center gap-2.5">
+            <div
+                className={cx(
+                    "w-6 h-6 rounded-full border flex items-center justify-center",
+                    bgColor,
+                    borderColor
+                )}
+            >
+                <Icon className={cx("size-3", iconColor)} />
+            </div>
+            <span className="text-sm text-gray-700">
+                {label}
+                {count !== undefined && <span className="text-gray-400 ml-1">({count})</span>}
+            </span>
+        </div>
     );
 }
 
@@ -554,71 +679,83 @@ function MapPanel({ inspections }: { inspections: Inspection[] }) {
     const scheduledCount = inspections.filter(i => i.status === "Scheduled").length;
     const inProgressCount = inspections.filter(i => i.status === "In Progress").length;
     const completedCount = inspections.filter(i => i.status === "Completed").length;
+    const urgentCount = inspections.filter(i => i.priority === "Urgent").length;
 
     return (
-        <div className="relative h-full bg-slate-100 overflow-hidden">
+        <div className="relative h-full bg-slate-50 overflow-hidden">
+            {/* Stylized Map Background */}
             <div className="absolute inset-0">
-                <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-blue-200/50 to-transparent" />
+                {/* Subtle gradient */}
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-slate-100 to-blue-50" />
+                {/* Grid lines */}
                 <div
-                    className="absolute inset-0 opacity-30"
+                    className="absolute inset-0 opacity-40"
                     style={{
                         backgroundImage: `
-                            linear-gradient(rgba(100,116,139,0.3) 1px, transparent 1px),
-                            linear-gradient(90deg, rgba(100,116,139,0.3) 1px, transparent 1px)
+                            linear-gradient(rgba(148,163,184,0.4) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(148,163,184,0.4) 1px, transparent 1px)
                         `,
-                        backgroundSize: "60px 60px",
+                        backgroundSize: "50px 50px",
                     }}
                 />
+                {/* Decorative shapes */}
+                <div className="absolute top-[20%] right-[10%] w-32 h-32 rounded-full bg-blue-100/40 blur-2xl" />
+                <div className="absolute bottom-[30%] left-[20%] w-40 h-40 rounded-full bg-indigo-100/30 blur-3xl" />
             </div>
 
+            {/* Map Markers - Pastel Circles */}
             <div className="absolute inset-0">
-                <div className="absolute top-[25%] left-[30%] group cursor-pointer">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white">
-                        <Clock className="size-4" />
-                    </div>
-                </div>
-                <div className="absolute top-[40%] left-[50%] group cursor-pointer">
-                    <div className="w-8 h-8 bg-amber-500 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white animate-pulse">
-                        <PlayCircle className="size-4" />
-                    </div>
-                </div>
-                <div className="absolute top-[60%] left-[35%] group cursor-pointer">
-                    <div className="w-8 h-8 bg-green-500 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white">
-                        <CheckCircle2 className="size-4" />
-                    </div>
-                </div>
-                <div className="absolute top-[30%] left-[60%] group cursor-pointer">
-                    <div className="w-8 h-8 bg-orange-500 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white">
-                        <Clock className="size-4" />
-                    </div>
-                </div>
+                <MapMarker status="Scheduled" style={{ top: "20%", left: "25%" }} />
+                <MapMarker status="In Progress" style={{ top: "35%", left: "55%" }} />
+                <MapMarker status="Completed" style={{ top: "55%", left: "30%" }} />
+                <MapMarker status="Scheduled" isUrgent style={{ top: "25%", left: "65%" }} />
+                <MapMarker status="Pending Review" style={{ top: "65%", left: "60%" }} />
+                <MapMarker status="In Progress" style={{ top: "45%", left: "40%" }} />
             </div>
 
-            <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-lg">
+            {/* Legend - Bottom Right */}
+            <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-100">
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Legend</h4>
-                <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-blue-500" />
-                        <span className="text-sm text-gray-700">Scheduled ({scheduledCount})</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-amber-500" />
-                        <span className="text-sm text-gray-700">In Progress ({inProgressCount})</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-green-500" />
-                        <span className="text-sm text-gray-700">Completed ({completedCount})</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-orange-500" />
-                        <span className="text-sm text-gray-700">Pending Review</span>
-                    </div>
+                <div className="space-y-2.5">
+                    <LegendItem
+                        label="Scheduled"
+                        count={scheduledCount}
+                        bgColor="bg-blue-100"
+                        borderColor="border-blue-200"
+                        icon={Clock}
+                        iconColor="text-blue-600"
+                    />
+                    <LegendItem
+                        label="In Progress"
+                        count={inProgressCount}
+                        bgColor="bg-indigo-100"
+                        borderColor="border-indigo-200"
+                        icon={PlayCircle}
+                        iconColor="text-indigo-600"
+                    />
+                    <LegendItem
+                        label="Completed"
+                        count={completedCount}
+                        bgColor="bg-gray-100"
+                        borderColor="border-gray-300"
+                        icon={CheckCircle2}
+                        iconColor="text-gray-500"
+                    />
+                    <LegendItem
+                        label="Urgent"
+                        count={urgentCount}
+                        bgColor="bg-orange-100"
+                        borderColor="border-orange-200"
+                        icon={Zap}
+                        iconColor="text-orange-600"
+                    />
                 </div>
             </div>
 
-            <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md">
+            {/* Location Badge - Top Right */}
+            <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md border border-gray-100">
                 <div className="flex items-center gap-2">
-                    <MapPin className="size-4 text-gray-600" />
+                    <MapPin className="size-4 text-gray-500" />
                     <span className="text-sm font-medium text-gray-900">Chicago, IL</span>
                 </div>
             </div>

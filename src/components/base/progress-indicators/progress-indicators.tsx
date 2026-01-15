@@ -44,7 +44,7 @@ export const ProgressBarBase = ({ value, min = 0, max = 100, className, progress
             aria-valuenow={value}
             aria-valuemin={min}
             aria-valuemax={max}
-            className={cx("h-2 w-full overflow-hidden rounded-md bg-quaternary", className)}
+            className={cx("h-1.5 w-full overflow-hidden rounded-md bg-quaternary", className)}
         >
             <div
                 // Use transform instead of width to avoid layout thrashing (and for smoother animation)

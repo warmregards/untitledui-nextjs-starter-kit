@@ -1,56 +1,138 @@
-# Untitled UI starter kit for Next.js
+# Coreverus
 
-This is an official Untitled UI starter kit for Next.js. Kickstart your Untitled UI project with Next.js in seconds.
+**Property Inspection SaaS Platform**
 
-## Untitled UI React
+A modern Next.js 14 application for managing property inspections with role-based access control for Admins and Inspectors.
 
-[Untitled UI React](https://www.untitledui.com/react) is the world’s largest collection of open-source React UI components. Everything you need to design and develop modern, beautiful interfaces—fast.
+## Tech Stack
 
-Built with React 19.1, Tailwind CSS v4.1, TypeScript 5.8, and React Aria, Untitled UI React components deliver modern performance, type safety, and maintainability.
+| Category | Technology |
+|----------|------------|
+| Framework | Next.js 14 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 + Untitled UI Design System |
+| Components | React Aria Components |
+| Icons | Lucide React |
+| Charts | Recharts |
+| Map Integration | Static / CSS Grid Split-View |
 
-[Learn more](https://www.untitledui.com/react) • [Documentation](https://www.untitledui.com/react/docs/introduction) • [Figma](https://www.untitledui.com/figma) • [FAQs](https://www.untitledui.com/faqs)
+## Getting Started
 
-## Getting started
+### Prerequisites
 
-First, run the development server:
+- Node.js 18+
+- npm or yarn
+
+### Installation
 
 ```bash
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build for Production
 
-## Resources
+```bash
+npm run build
+npm start
+```
 
-Untitled UI React is built on top of [Untitled UI Figma](https://www.untitledui.com/figma), the world's largest and most popular Figma UI kit and design system. Explore more:
+## Project Structure
 
-**[Untitled UI Figma:](https://www.untitledui.com/react/resources/figma-files)** The world's largest Figma UI kit and design system.
-<br/>
-**[Untitled UI Icons:](https://www.untitledui.com/react/resources/icons)** A clean, consistent, and neutral icon library crafted specifically for modern UI design.
-<br/>
-**[Untitled UI file icons:](https://www.untitledui.com/react/resources/file-icons)** Free file format icons, designed specifically for modern web and UI design.
-<br/>
-**[Untitled UI flag icons:](https://www.untitledui.com/react/resources/flag-icons)** Free country flag icons, designed specifically for modern web and UI design.
-<br/>
-**[Untitled UI avatars:](https://www.untitledui.com/react/resources/avatars)** Free placeholder user avatars and profile pictures to use in your projects.
-<br/>
-**[Untitled UI logos:](https://www.untitledui.com/react/resources/logos)** Free fictional company logos to use in your projects.
+```
+src/
+├── app/
+│   ├── (auth)/              # Authentication pages (login, signup, invite)
+│   ├── (dashboard)/         # Protected routes
+│   │   ├── dashboard/       # Main dashboard (role-specific views)
+│   │   ├── inspections/     # Inspection list and detail pages
+│   │   ├── properties/      # Property list and detail pages
+│   │   └── settings/        # User and organization settings
+│   └── layout.tsx           # Root layout
+├── components/
+│   ├── application/         # Complex application components
+│   ├── base/                # Base UI components (buttons, inputs, etc.)
+│   ├── features/            # Feature-specific components
+│   ├── onboarding/          # Onboarding wizard components
+│   └── ui/                  # Reusable UI primitives
+├── contexts/                # React context providers
+├── data/                    # Centralized mock data
+├── types/                   # TypeScript type definitions
+└── utils/                   # Utility functions
+```
+
+## Key Features
+
+### Role-Based Access Control
+- **Admin View:** Full dashboard with analytics, team management, and approval workflows
+- **Inspector View:** Optimized mobile-first interface with today's schedule, route planning, and quick actions
+
+### Dashboard
+- Real-time statistics and KPIs
+- Inspection trend charts (7-day / 30-day views)
+- Pending approval queue with one-click review
+- Top inspectors leaderboard
+
+### Inspections Management
+- List view with filtering by status, type, and date
+- Split-view map interface for geographic context
+- Detailed inspection reports with photo documentation
+- Status workflow: Scheduled → In Progress → Completed
+
+### Properties
+- Property portfolio management
+- Owner and tenant information tracking
+- Access codes and entry instructions (inspector-only)
+- Inspection history timeline
+
+### Additional Features
+- Offline-ready UI indicators
+- Strict TypeScript typing throughout
+- Responsive design (mobile, tablet, desktop)
+- Dark mode support via CSS variables
+
+## Type Definitions
+
+Core types are defined in `src/types/index.ts`:
+
+```typescript
+// User roles
+type UserRole = 'admin' | 'inspector';
+
+// Inspection workflow
+type InspectionStatus = 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled';
+type InspectionType = 'Move-In' | 'Annual' | 'Move-Out';
+type PriorityLevel = 'Standard' | 'Urgent';
+
+// Core entities
+interface User { id, email, fullName, role, avatar? }
+interface Property { id, address, city, state, zip, ownerName, tenantName?, ... }
+interface Inspection { id, propertyId, inspectorId?, type, status, scheduledDate, ... }
+```
+
+## Mock Data
+
+Centralized mock data is available in `src/data/mock-data.ts`:
+
+- `USERS` - User accounts (admin + inspectors)
+- `PROPERTIES` - Property portfolio
+- `INSPECTIONS` - Inspection records
+- Helper functions: `formatDate()`, `formatTime()`, `getPropertyById()`
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
 
 ## License
 
-Untitled UI React open-source components are licensed under the MIT license, which means you can use them for free in unlimited commercial projects.
-
-> [!NOTE]
-> This license applies only to the starter kit and to the components included in this open-source repository. [Untitled UI React PRO](https://www.untitledui.com/react) includes hundreds more advanced UI components and page examples and is subject to a separate [license agreement](https://www.untitledui.com/license).
-
-[Untitled UI license agreement →](https://www.untitledui.com/license)
-
-[Frequently asked questions →](https://www.untitledui.com/faqs)
+Private - All rights reserved.

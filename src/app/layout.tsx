@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
     themeColor: "#7f56d9",
-    colorScheme: "light dark",
+    colorScheme: "light",
 };
 
 export default function RootLayout({
@@ -27,8 +27,8 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" suppressHydrationWarning>
-            <body className={cx(inter.variable, "bg-primary antialiased")}>
+        <html lang="en" className="light-mode antialiased" suppressHydrationWarning>
+            <body className={cx(inter.variable, "bg-primary")}>
                 <RouteProvider>
                     <Theme>{children}</Theme>
                 </RouteProvider>

@@ -585,27 +585,52 @@ export default function InspectionDetailPage({ params }: { params: Promise<{ id:
 
                         {/* Action Buttons */}
                         <div className="flex items-center gap-3">
-                            {isInspector && inspection.status === "In Progress" && (
-                                <>
-                                    <Button color="secondary" size="md" iconLeading={Save}>Save Draft</Button>
-                                    <Button color="primary" size="md" iconLeading={Send} onClick={() => setIsSubmitModalOpen(true)}>
-                                        Submit Report
-                                    </Button>
-                                </>
-                            )}
-                            {isAdmin && inspection.status === "Pending Review" && (
+                            {/* Origination Workflow Actions */}
+                            {isOrigination && (
                                 <>
                                     <Button color="secondary" size="md" iconLeading={Printer}>Print Report</Button>
-                                    <Button color="secondary" size="md" iconLeading={RotateCcw} onClick={() => setIsRequestChangesModalOpen(true)}>
-                                        Request Changes
-                                    </Button>
-                                    <Button color="primary" size="md" iconLeading={CheckCircle2} onClick={() => setIsApproveModalOpen(true)}>
-                                        Approve
-                                    </Button>
+                                    {inspection.status === "In Progress" && (
+                                        <Button
+                                            size="md"
+                                            iconLeading={Send}
+                                            onClick={() => {
+                                                console.log("Origination Report Submitted", { id, workflow: inspection.workflow });
+                                                alert("Report Submitted!");
+                                            }}
+                                            className="bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500"
+                                        >
+                                            Submit Report
+                                        </Button>
+                                    )}
                                 </>
                             )}
-                            {isAdmin && inspection.status !== "Pending Review" && (
-                                <Button color="secondary" size="md" iconLeading={Printer}>Print Report</Button>
+
+                            {/* Servicing Workflow Actions */}
+                            {isServicing && (
+                                <>
+                                    {isInspector && inspection.status === "In Progress" && (
+                                        <>
+                                            <Button color="secondary" size="md" iconLeading={Save}>Save Draft</Button>
+                                            <Button color="primary" size="md" iconLeading={Send} onClick={() => setIsSubmitModalOpen(true)}>
+                                                Submit Report
+                                            </Button>
+                                        </>
+                                    )}
+                                    {isAdmin && inspection.status === "Pending Review" && (
+                                        <>
+                                            <Button color="secondary" size="md" iconLeading={Printer}>Print Report</Button>
+                                            <Button color="secondary" size="md" iconLeading={RotateCcw} onClick={() => setIsRequestChangesModalOpen(true)}>
+                                                Request Changes
+                                            </Button>
+                                            <Button color="primary" size="md" iconLeading={CheckCircle2} onClick={() => setIsApproveModalOpen(true)}>
+                                                Approve
+                                            </Button>
+                                        </>
+                                    )}
+                                    {isAdmin && inspection.status !== "Pending Review" && (
+                                        <Button color="secondary" size="md" iconLeading={Printer}>Print Report</Button>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>

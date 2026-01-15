@@ -6,7 +6,8 @@
       "Bash(head:*)",
       "Bash(lsof:*)",
       "Bash(grep:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(node -e:*)"
     ]
   }
 }

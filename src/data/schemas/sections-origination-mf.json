@@ -1,0 +1,103 @@
+{
+  "$id": "inspectra-cre/sections/origination-mf-v1",
+  "title": "Origination (MF) Inspection Sections",
+  "description": "Section/field definitions for Path A - App Model Multifamily (SBL) Questionnaire",
+  "workflowPath": "ORIGINATION_MF",
+  "validationMode": "STRICT",
+
+  "sections": [
+    {
+      "id": "mf_questionnaire_meta",
+      "title": "Questionnaire Information",
+      "category": "General Information",
+      "sortOrder": 1,
+      "fields": [
+        { "id": "mf_completed_by", "label": "Questionnaire completed by", "type": "TEXT", "required": true, "validationLevel": "BLOCKER" },
+        { "id": "mf_completed_date", "label": "Date questionnaire completed", "type": "DATE", "required": true, "validationLevel": "BLOCKER" },
+        { "id": "mf_title_affiliation", "label": "Title/affiliation to subject property", "type": "TEXT", "required": true, "validationLevel": "BLOCKER" }
+      ]
+    },
+    {
+      "id": "mf_economic_outlook",
+      "title": "Economic Outlook",
+      "category": "Market & Operations",
+      "sortOrder": 2,
+      "fields": [
+        { "id": "mf_q1_economic_outlook", "label": "Economic outlook description", "helpText": "Positive/Flat/Downward support.", "type": "TEXTAREA", "required": true, "validationLevel": "BLOCKER", "maxLength": 2000 },
+        { "id": "mf_q1_outlook_rating", "label": "Economic outlook rating", "type": "SELECT", "required": true, "validationLevel": "BLOCKER", "options": [{ "value": "POSITIVE", "label": "Positive" }, { "value": "FLAT", "label": "Flat" }, { "value": "DOWNWARD", "label": "Downward" }] },
+        { "id": "mf_q2_rental_competition", "label": "Biggest rental competition", "type": "TEXTAREA", "required": true, "validationLevel": "BLOCKER", "maxLength": 500 },
+        { "id": "mf_q3_visibility", "label": "Is property visible to traffic?", "type": "SELECT", "required": true, "validationLevel": "BLOCKER", "options": [{ "value": "YES", "label": "Yes" }, { "value": "NO", "label": "No" }] }
+      ]
+    },
+    {
+      "id": "mf_income_tenancy",
+      "title": "Income and Tenancy",
+      "category": "Market & Operations",
+      "sortOrder": 3,
+      "fields": [
+        { "id": "mf_q5_avg_residency", "label": "Avg. length of residency", "type": "TEXT", "required": true, "validationLevel": "BLOCKER" },
+        { "id": "mf_q6_restricted_units", "label": "Rent/income restricted units?", "type": "SELECT", "required": true, "validationLevel": "BLOCKER", "options": [{ "value": "YES", "label": "Yes" }, { "value": "NO", "label": "No" }] },
+        { "id": "mf_q7_initial_lease_terms", "label": "Initial lease terms", "type": "TEXT", "required": true, "validationLevel": "BLOCKER" },
+        { "id": "mf_q8_special_tenants", "label": "Corporate/Student/Military tenants?", "type": "SELECT", "required": true, "validationLevel": "BLOCKER", "options": [{ "value": "YES", "label": "Yes" }, { "value": "NO", "label": "No" }] }
+      ]
+    },
+    {
+      "id": "mf_property_management",
+      "title": "Property Management",
+      "category": "Market & Operations",
+      "sortOrder": 4,
+      "fields": [
+        { "id": "mf_q19_management_type", "label": "Management Type", "type": "SELECT", "required": true, "validationLevel": "BLOCKER", "options": [{ "value": "THIRD_PARTY", "label": "Third party" }, { "value": "BORROWER_AFFILIATED", "label": "Borrower affiliated" }, { "value": "SELF_MANAGED", "label": "Self-managed" }] },
+        { "id": "mf_q20_onsite_manager", "label": "Onsite manager?", "type": "SELECT", "required": true, "validationLevel": "BLOCKER", "options": [{ "value": "YES", "label": "Yes" }, { "value": "NO", "label": "No" }] }
+      ]
+    },
+    {
+      "id": "mf_specific_incidents",
+      "title": "Risk Assessment",
+      "category": "Property Condition",
+      "sortOrder": 5,
+      "fields": [
+        { "id": "mf_q4_incidents", "label": "Specific incidents in past 2 years", "type": "MULTI_SELECT", "required": true, "validationLevel": "BLOCKER", "options": [{ "value": "NONE", "label": "None" }, { "value": "FIRE", "label": "Fire" }, { "value": "CRIME", "label": "Crime/Police Activity" }] }
+      ]
+    },
+    {
+      "id": "mf_utilities",
+      "title": "Utilities",
+      "category": "Property Condition",
+      "sortOrder": 6,
+      "fields": [
+        { "id": "mf_q15_tenant_pays", "label": "Tenant paid utilities", "type": "MULTI_SELECT", "required": true, "validationLevel": "BLOCKER", "options": [{ "value": "ELECTRIC", "label": "Electric" }, { "value": "GAS", "label": "Gas" }, { "value": "WATER", "label": "Water" }, { "value": "NONE", "label": "None" }] }
+      ]
+    },
+    {
+      "id": "mf_capex",
+      "title": "Capital Expenditures",
+      "category": "Property Condition",
+      "sortOrder": 7,
+      "fields": [
+        { "id": "mf_q16_past_capex", "label": "CapEx past 3 years", "type": "TEXTAREA", "required": true, "validationLevel": "BLOCKER", "maxLength": 2000 },
+        { "id": "mf_q17_future_capex", "label": "Planned future CapEx?", "type": "SELECT", "required": true, "validationLevel": "BLOCKER", "options": [{ "value": "YES", "label": "Yes" }, { "value": "NO", "label": "No" }] }
+      ]
+    },
+    {
+      "id": "mf_repairs_maintenance",
+      "title": "Repairs & Maintenance",
+      "category": "Property Condition",
+      "sortOrder": 8,
+      "fields": [
+        { "id": "mf_q24_roof_age", "label": "Age of roofs", "type": "TEXT", "required": true, "validationLevel": "BLOCKER" },
+        { "id": "mf_q25_amenities", "label": "Has amenities?", "type": "SELECT", "required": true, "validationLevel": "BLOCKER", "options": [{ "value": "YES", "label": "Yes" }, { "value": "NO", "label": "No" }] }
+      ]
+    },
+    {
+      "id": "mf_photos",
+      "title": "Site Photos",
+      "category": "Photos",
+      "sortOrder": 9,
+      "fields": [
+        { "id": "mf_photos_exterior", "label": "Exterior Photos", "type": "PHOTO_ARRAY", "required": true, "validationLevel": "BLOCKER", "photoConfig": { "minPhotos": 4, "maxPhotos": 20 } },
+        { "id": "mf_photos_units", "label": "Unit Photos", "type": "PHOTO_ARRAY", "required": true, "validationLevel": "BLOCKER", "photoConfig": { "minPhotos": 6, "maxPhotos": 50 } }
+      ]
+    }
+  ]
+}

@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Button } from "@/components/base/buttons/button";
+import { ScheduleInspectionModal } from "@/components/inspections/schedule-inspection-modal";
 import { PropertyImage } from "@/components/ui/property-image";
 import { INSPECTIONS } from "@/data/mock-data";
 import { useUserRole } from "@/contexts/user-role-context";
@@ -798,6 +799,7 @@ export default function InspectionsPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [workflowFilter, setWorkflowFilter] = useState<WorkflowFilter>("all");
     const [assignModalOpen, setAssignModalOpen] = useState(false);
+    const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
     const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null);
 
     // Filter inspections based on search query and workflow
@@ -864,7 +866,7 @@ export default function InspectionsPage() {
                                 Filter
                             </Button>
                             {isAdmin && (
-                                <Button color="primary" size="md" iconLeading={Plus}>
+                                <Button color="primary" size="md" iconLeading={Plus} onClick={() => setScheduleModalOpen(true)}>
                                     Schedule Inspection
                                 </Button>
                             )}
@@ -993,6 +995,15 @@ export default function InspectionsPage() {
                 onClose={() => setAssignModalOpen(false)}
                 onAssign={handleAssign}
                 propertyAddress={selectedInspection?.property?.address || "Unknown Property"}
+            />
+
+            <ScheduleInspectionModal
+                isOpen={scheduleModalOpen}
+                onClose={() => setScheduleModalOpen(false)}
+                onSubmit={(data) => {
+                    console.log("Inspection scheduled:", data);
+                    alert(`Inspection scheduled for ${data.propertyAddress}`);
+                }}
             />
         </div>
     );

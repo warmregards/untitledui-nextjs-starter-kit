@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useId, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
     CheckCircle2,
@@ -50,37 +50,37 @@ const STATUS_CONFIG: Record<
         borderColor: string;
     }
 > = {
-    // ACTIVE STATES - Colored
+    // ACTIVE STATES - Colored (bumped to 800 for WCAG AA contrast)
     "In Progress": {
         icon: PlayCircle,
         bgColor: "bg-blue-50",
-        textColor: "text-blue-700",
+        textColor: "text-blue-800",
         borderColor: "border-blue-200",
     },
     "Pending Review": {
         icon: Clock,
         bgColor: "bg-amber-50",
-        textColor: "text-amber-700",
+        textColor: "text-amber-800",
         borderColor: "border-amber-200",
     },
     // PASSIVE STATES - Gray/Neutral
     Scheduled: {
         icon: Clock,
         bgColor: "bg-gray-100",
-        textColor: "text-gray-600",
+        textColor: "text-gray-700",
         borderColor: "border-gray-200",
     },
     Completed: {
         icon: CheckCircle2,
-        iconColor: "text-green-600", // Green check icon on gray bg
+        iconColor: "text-green-700", // Green check icon on gray bg
         bgColor: "bg-gray-100",
-        textColor: "text-gray-600",
+        textColor: "text-gray-700",
         borderColor: "border-gray-200",
     },
     Cancelled: {
         icon: XCircle,
         bgColor: "bg-gray-100",
-        textColor: "text-gray-500",
+        textColor: "text-gray-600",
         borderColor: "border-gray-200",
     },
 };
@@ -117,7 +117,7 @@ function StatusBadge({ status }: { status: InspectionStatus }) {
                 config.borderColor
             )}
         >
-            <Icon className={cx("size-3", config.iconColor)} />
+            <Icon className={cx("size-3", config.iconColor)} aria-hidden="true" />
             {status}
         </span>
     );
@@ -125,12 +125,12 @@ function StatusBadge({ status }: { status: InspectionStatus }) {
 
 /**
  * Urgent Badge - Pill-shaped badge matching Status badge styling
- * Orange/Red color to draw attention
+ * Orange/Red color to draw attention (bumped to 800 for WCAG AA contrast)
  */
 function UrgentBadge() {
     return (
-        <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border h-6 bg-orange-50 text-orange-700 border-orange-200">
-            <Zap className="size-3 fill-orange-500 text-orange-500" />
+        <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border h-6 bg-orange-50 text-orange-800 border-orange-200">
+            <Zap className="size-3 fill-orange-600 text-orange-600" aria-hidden="true" />
             Urgent
         </span>
     );
@@ -149,18 +149,21 @@ function GrayBadge({ children }: { children: React.ReactNode }) {
 
 /**
  * Workflow Icon - Monochrome circular icon indicator
+ * Accessible: aria-label for screen readers, title for mouse users
  */
 function WorkflowIcon({ workflow }: { workflow: string }) {
     const isOrigination = workflow === "ORIGINATION_MF";
     const Icon = isOrigination ? FileSignature : ClipboardList;
-    const tooltip = isOrigination ? "Origination Inspection" : "Servicing Inspection";
+    const label = isOrigination ? "Origination Inspection" : "Servicing Inspection";
 
     return (
         <div
             className="flex size-8 items-center justify-center rounded-full shrink-0 bg-gray-100"
-            title={tooltip}
+            role="img"
+            aria-label={label}
+            title={label}
         >
-            <Icon className="size-4 text-gray-500" />
+            <Icon className="size-4 text-gray-500" aria-hidden="true" />
         </div>
     );
 }
@@ -205,7 +208,7 @@ function formatTime(time: string): string {
 }
 
 // ============================================================================
-// Workflow Filter Toggles
+// Workflow Filter Toggles - Accessible Segmented Control
 // ============================================================================
 
 function WorkflowFilterToggle({
@@ -216,11 +219,16 @@ function WorkflowFilterToggle({
     onChange: (filter: WorkflowFilter) => void;
 }) {
     return (
-        <div className="flex items-center bg-gray-100 p-1 rounded-lg">
+        <div
+            className="flex items-center bg-gray-100 p-1 rounded-lg"
+            role="group"
+            aria-label="Filter by workflow type"
+        >
             <button
                 onClick={() => onChange("all")}
+                aria-pressed={value === "all"}
                 className={cx(
-                    "px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+                    "px-3 py-1.5 rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2",
                     value === "all"
                         ? "bg-white text-gray-900 shadow-sm"
                         : "text-gray-500 hover:text-gray-700"
@@ -230,26 +238,28 @@ function WorkflowFilterToggle({
             </button>
             <button
                 onClick={() => onChange("origination")}
+                aria-pressed={value === "origination"}
                 className={cx(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2",
                     value === "origination"
-                        ? "bg-white text-purple-700 shadow-sm"
+                        ? "bg-white text-purple-800 shadow-sm"
                         : "text-gray-500 hover:text-gray-700"
                 )}
             >
-                <FileSignature className="size-3.5" />
+                <FileSignature className="size-3.5" aria-hidden="true" />
                 Origination
             </button>
             <button
                 onClick={() => onChange("servicing")}
+                aria-pressed={value === "servicing"}
                 className={cx(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2",
                     value === "servicing"
-                        ? "bg-white text-blue-700 shadow-sm"
+                        ? "bg-white text-blue-800 shadow-sm"
                         : "text-gray-500 hover:text-gray-700"
                 )}
             >
-                <ClipboardList className="size-3.5" />
+                <ClipboardList className="size-3.5" aria-hidden="true" />
                 Servicing
             </button>
         </div>
@@ -257,7 +267,7 @@ function WorkflowFilterToggle({
 }
 
 // ============================================================================
-// Assign Inspector Modal
+// Assign Inspector Modal - Fully Accessible
 // ============================================================================
 
 interface AssignInspectorModalProps {
@@ -268,39 +278,87 @@ interface AssignInspectorModalProps {
 }
 
 function AssignInspectorModal({ isOpen, onClose, onAssign, propertyAddress }: AssignInspectorModalProps) {
+    const titleId = useId();
+    const descriptionId = useId();
+
+    // Handle escape key
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                e.preventDefault();
+                onClose();
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown);
+        // Prevent body scroll when modal is open
+        document.body.style.overflow = "hidden";
+
+        return () => {
+            document.removeEventListener("keydown", handleKeyDown);
+            document.body.style.overflow = "";
+        };
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={onClose} />
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            aria-describedby={descriptionId}
+        >
+            {/* Backdrop */}
+            <div
+                className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm"
+                onClick={onClose}
+                aria-hidden="true"
+            />
+
+            {/* Modal Content */}
             <div className="relative z-10 mx-4 w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
+                {/* Header */}
                 <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
                     <div>
-                        <h2 className="text-lg font-semibold text-gray-900">Assign Inspector</h2>
-                        <p className="text-sm text-gray-500 mt-0.5 truncate max-w-[280px]">{propertyAddress}</p>
+                        <h2 id={titleId} className="text-lg font-semibold text-gray-900">
+                            Assign Inspector
+                        </h2>
+                        <p id={descriptionId} className="text-sm text-gray-500 mt-0.5 truncate max-w-[280px]">
+                            {propertyAddress}
+                        </p>
                     </div>
                     <button
                         onClick={onClose}
-                        className="flex size-9 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                        aria-label="Close dialog"
+                        className="flex size-9 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                     >
-                        <X className="size-5" />
+                        <X className="size-5" aria-hidden="true" />
                     </button>
                 </div>
-                <div className="max-h-[400px] overflow-y-auto">
+
+                {/* Inspector List */}
+                <div className="max-h-[400px] overflow-y-auto" role="listbox" aria-label="Available inspectors">
                     <div className="p-2">
                         {MOCK_INSPECTORS.map((inspector) => (
                             <button
                                 key={inspector.id}
+                                role="option"
+                                aria-selected={false}
+                                aria-label={`Assign ${inspector.fullName}, ${inspector.distance} away`}
                                 onClick={() => {
                                     onAssign(inspector.id);
                                     onClose();
                                 }}
-                                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset"
                             >
                                 <Avatar
                                     size="md"
                                     src={inspector.avatar}
-                                    alt={inspector.fullName}
+                                    alt=""
                                     initials={inspector.fullName.split(" ").map(n => n[0]).join("")}
                                 />
                                 <div className="flex-1 min-w-0">
@@ -308,13 +366,15 @@ function AssignInspectorModal({ isOpen, onClose, onAssign, propertyAddress }: As
                                     <p className="text-xs text-gray-500">Available</p>
                                 </div>
                                 <div className="flex items-center gap-1 text-sm text-gray-500">
-                                    <MapPin className="size-3.5" />
+                                    <MapPin className="size-3.5" aria-hidden="true" />
                                     <span>{inspector.distance}</span>
                                 </div>
                             </button>
                         ))}
                     </div>
                 </div>
+
+                {/* Footer */}
                 <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
                     <Button color="secondary" size="md" className="w-full" onClick={onClose}>
                         Cancel
@@ -340,7 +400,7 @@ function InspectionsTable({
 }) {
     return (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full divide-y divide-gray-200" aria-label="Inspections list">
                 <thead className="bg-gray-50">
                     <tr>
                         <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -361,6 +421,7 @@ function InspectionsTable({
                             Date & Time
                         </th>
                         <th scope="col" className="px-6 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            <span className="sr-only">Actions</span>
                             Action
                         </th>
                     </tr>
@@ -378,8 +439,8 @@ function InspectionsTable({
             </table>
 
             {inspections.length === 0 && (
-                <div className="py-12 text-center">
-                    <Search className="mx-auto size-8 text-gray-300" />
+                <div className="py-12 text-center" role="status">
+                    <Search className="mx-auto size-8 text-gray-300" aria-hidden="true" />
                     <p className="mt-2 text-sm text-gray-500">No inspections found</p>
                 </div>
             )}
@@ -399,22 +460,41 @@ function InspectionTableRow({
     const scheduledDate = new Date(inspection.scheduledDate);
     const isUrgent = inspection.priority === "Urgent";
     const imageUrl = inspection.property?.imageUrl || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=100&h=100&fit=crop";
+    const propertyAddress = inspection.property?.address || `Property ${inspection.propertyId}`;
 
-    // Determine action button label
-    const getActionLabel = (): string => {
+    // Determine action button label and aria-label
+    const getActionInfo = (): { label: string; ariaLabel: string } => {
         if (isAdmin) {
-            return "View";
+            return {
+                label: "View",
+                ariaLabel: `View inspection for ${propertyAddress}`,
+            };
         }
         // Inspector logic
-        if (inspection.status === "Scheduled") return "Start";
-        if (inspection.status === "In Progress") return "Resume";
-        return "View";
+        if (inspection.status === "Scheduled") {
+            return {
+                label: "Start",
+                ariaLabel: `Start inspection for ${propertyAddress}`,
+            };
+        }
+        if (inspection.status === "In Progress") {
+            return {
+                label: "Resume",
+                ariaLabel: `Resume inspection for ${propertyAddress}`,
+            };
+        }
+        return {
+            label: "View",
+            ariaLabel: `View inspection for ${propertyAddress}`,
+        };
     };
+
+    const actionInfo = getActionInfo();
 
     return (
         <tr className="hover:bg-gray-50 transition-colors">
-            {/* Property Column with Workflow Icon */}
-            <td className="px-6 py-4 whitespace-nowrap">
+            {/* Property Column (Row Header) with Workflow Icon */}
+            <th scope="row" className="px-6 py-4 whitespace-nowrap text-left font-normal">
                 <div className="flex items-center gap-5">
                     {/* Workflow Icon - Monochrome */}
                     <WorkflowIcon workflow={inspection.workflow} />
@@ -424,14 +504,14 @@ function InspectionTableRow({
                         <div className="w-11 h-11 rounded-lg overflow-hidden bg-gray-100 shrink-0 ring-1 ring-gray-200">
                             <PropertyImage
                                 src={imageUrl}
-                                alt={inspection.property?.address || "Property"}
+                                alt=""
                                 className="w-full h-full"
                             />
                         </div>
                         {/* Address + Location */}
                         <div className="min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">
-                                {inspection.property?.address || `Property ${inspection.propertyId}`}
+                                {propertyAddress}
                             </p>
                             <p className="text-sm text-gray-500">
                                 {inspection.property?.city}, {inspection.property?.state}
@@ -439,7 +519,7 @@ function InspectionTableRow({
                         </div>
                     </div>
                 </div>
-            </td>
+            </th>
 
             {/* Inspector Column - Admin only */}
             {isAdmin && (
@@ -449,7 +529,7 @@ function InspectionTableRow({
                             <Avatar
                                 size="sm"
                                 src={inspection.inspector.avatar}
-                                alt={inspection.inspector.fullName}
+                                alt=""
                                 initials={inspection.inspector.fullName.split(" ").map(n => n[0]).join("")}
                             />
                             <span className="text-sm text-gray-700">{inspection.inspector.fullName}</span>
@@ -457,9 +537,10 @@ function InspectionTableRow({
                     ) : (
                         <button
                             onClick={() => onAssignClick(inspection)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-dashed border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                            aria-label={`Assign inspector to ${propertyAddress}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-dashed border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                         >
-                            <UserPlus className="size-3.5" />
+                            <UserPlus className="size-3.5" aria-hidden="true" />
                             Assign
                         </button>
                     )}
@@ -485,11 +566,11 @@ function InspectionTableRow({
                 <div className="text-xs text-gray-500">{formatTime(inspection.scheduledTime)}</div>
             </td>
 
-            {/* Action Column - Text only, no icons */}
+            {/* Action Column - Unique aria-label for each row */}
             <td className="px-6 py-4 whitespace-nowrap text-right">
-                <Link href={`/inspections/${inspection.id}`}>
+                <Link href={`/inspections/${inspection.id}`} aria-label={actionInfo.ariaLabel}>
                     <Button color="tertiary" size="sm">
-                        {getActionLabel()}
+                        {actionInfo.label}
                     </Button>
                 </Link>
             </td>
@@ -503,27 +584,52 @@ function InspectionTableRow({
 
 /**
  * Map Card - Horizontal layout matching Table View visual fidelity
+ * Accessible: unique aria-labels, semantic heading, focus-visible
  */
 function InspectionCard({ inspection, isAdmin }: { inspection: Inspection; isAdmin: boolean }) {
     const isUrgent = inspection.priority === "Urgent";
     const imageUrl = inspection.property?.imageUrl || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=100&h=100&fit=crop";
+    const propertyAddress = inspection.property?.address || `Property ${inspection.propertyId}`;
 
-    // Action label for card
-    const getActionLabel = (): string => {
-        if (isAdmin) return "View";
-        if (inspection.status === "Scheduled") return "Start";
-        if (inspection.status === "In Progress") return "Resume";
-        return "View";
+    // Action info for card - label and aria-label
+    const getActionInfo = (): { label: string; ariaLabel: string } => {
+        if (isAdmin) {
+            return {
+                label: "View",
+                ariaLabel: `View inspection for ${propertyAddress}`,
+            };
+        }
+        if (inspection.status === "Scheduled") {
+            return {
+                label: "Start",
+                ariaLabel: `Start inspection for ${propertyAddress}`,
+            };
+        }
+        if (inspection.status === "In Progress") {
+            return {
+                label: "Resume",
+                ariaLabel: `Resume inspection for ${propertyAddress}`,
+            };
+        }
+        return {
+            label: "View",
+            ariaLabel: `View inspection for ${propertyAddress}`,
+        };
     };
 
+    const actionInfo = getActionInfo();
+
     return (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all">
+        <article
+            className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all"
+            aria-label={`${propertyAddress} - ${inspection.status}${isUrgent ? ", Urgent" : ""}`}
+        >
             <div className="flex items-center gap-4 p-4">
                 {/* Left - Property Image */}
                 <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 shrink-0 ring-1 ring-gray-200">
                     <PropertyImage
                         src={imageUrl}
-                        alt={inspection.property?.address || "Property"}
+                        alt=""
                         className="w-full h-full"
                     />
                 </div>
@@ -532,7 +638,7 @@ function InspectionCard({ inspection, isAdmin }: { inspection: Inspection; isAdm
                 <div className="flex-1 min-w-0">
                     {/* Row 1: Address */}
                     <h3 className="font-semibold text-gray-900 text-sm truncate">
-                        {inspection.property?.address || `Property ${inspection.propertyId}`}
+                        {propertyAddress}
                     </h3>
                     {/* Row 2: Badge Container */}
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -543,18 +649,23 @@ function InspectionCard({ inspection, isAdmin }: { inspection: Inspection; isAdm
                 </div>
 
                 {/* Right - CTA Button */}
-                <Link href={`/inspections/${inspection.id}`} className="shrink-0">
-                    <button className="px-4 py-2 text-sm font-medium text-gray-700 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 transition-colors">
-                        {getActionLabel()}
+                <Link
+                    href={`/inspections/${inspection.id}`}
+                    className="shrink-0"
+                    aria-label={actionInfo.ariaLabel}
+                >
+                    <button className="px-4 py-2 text-sm font-medium text-gray-700 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2">
+                        {actionInfo.label}
                     </button>
                 </Link>
             </div>
-        </div>
+        </article>
     );
 }
 
 /**
  * Map Marker - Pastel circle with icon
+ * Decorative element - hidden from screen readers (map is supplementary)
  */
 function MapMarker({
     status,
@@ -574,6 +685,7 @@ function MapMarker({
                 icon: Zap,
                 iconColor: "text-orange-600",
                 pulse: true,
+                label: "Urgent inspection",
             };
         }
         switch (status) {
@@ -584,6 +696,7 @@ function MapMarker({
                     icon: Clock,
                     iconColor: "text-blue-600",
                     pulse: false,
+                    label: "Scheduled inspection",
                 };
             case "In Progress":
                 return {
@@ -592,6 +705,7 @@ function MapMarker({
                     icon: PlayCircle,
                     iconColor: "text-indigo-600",
                     pulse: true,
+                    label: "In progress inspection",
                 };
             case "Pending Review":
                 return {
@@ -600,6 +714,7 @@ function MapMarker({
                     icon: Clock,
                     iconColor: "text-amber-600",
                     pulse: false,
+                    label: "Pending review inspection",
                 };
             case "Completed":
                 return {
@@ -608,6 +723,7 @@ function MapMarker({
                     icon: CheckCircle2,
                     iconColor: "text-gray-500",
                     pulse: false,
+                    label: "Completed inspection",
                 };
             default:
                 return {
@@ -616,6 +732,7 @@ function MapMarker({
                     icon: MapPin,
                     iconColor: "text-gray-500",
                     pulse: false,
+                    label: "Inspection marker",
                 };
         }
     };
@@ -624,7 +741,12 @@ function MapMarker({
     const Icon = config.icon;
 
     return (
-        <div className="absolute group cursor-pointer" style={style}>
+        <div
+            className="absolute group cursor-pointer"
+            style={style}
+            role="img"
+            aria-label={config.label}
+        >
             <div
                 className={cx(
                     "w-10 h-10 rounded-full border-2 shadow-md flex items-center justify-center transition-transform hover:scale-110",
@@ -633,7 +755,7 @@ function MapMarker({
                     config.pulse && "animate-pulse"
                 )}
             >
-                <Icon className={cx("size-5", config.iconColor)} />
+                <Icon className={cx("size-5", config.iconColor)} aria-hidden="true" />
             </div>
         </div>
     );
@@ -641,6 +763,7 @@ function MapMarker({
 
 /**
  * Legend Item - Pastel circle matching map markers
+ * Accessible: icon is decorative, text carries meaning
  */
 function LegendItem({
     label,
@@ -665,17 +788,27 @@ function LegendItem({
                     bgColor,
                     borderColor
                 )}
+                aria-hidden="true"
             >
                 <Icon className={cx("size-3", iconColor)} />
             </div>
             <span className="text-sm text-gray-700">
                 {label}
-                {count !== undefined && <span className="text-gray-400 ml-1">({count})</span>}
+                {count !== undefined && (
+                    <span className="text-gray-400 ml-1">
+                        (<span className="sr-only">{count} inspections</span>
+                        <span aria-hidden="true">{count}</span>)
+                    </span>
+                )}
             </span>
         </div>
     );
 }
 
+/**
+ * MapPanel - Interactive map visualization
+ * Accessible: decorative elements hidden, legend provides textual info
+ */
 function MapPanel({ inspections }: { inspections: Inspection[] }) {
     const scheduledCount = inspections.filter(i => i.status === "Scheduled").length;
     const inProgressCount = inspections.filter(i => i.status === "In Progress").length;
@@ -683,9 +816,13 @@ function MapPanel({ inspections }: { inspections: Inspection[] }) {
     const urgentCount = inspections.filter(i => i.priority === "Urgent").length;
 
     return (
-        <div className="relative h-full bg-slate-50 overflow-hidden">
-            {/* Stylized Map Background */}
-            <div className="absolute inset-0">
+        <div
+            className="relative h-full bg-slate-50 overflow-hidden"
+            role="region"
+            aria-label="Map view of inspections"
+        >
+            {/* Stylized Map Background - Decorative */}
+            <div className="absolute inset-0" aria-hidden="true">
                 {/* Subtle gradient */}
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-slate-100 to-blue-50" />
                 {/* Grid lines */}
@@ -717,7 +854,7 @@ function MapPanel({ inspections }: { inspections: Inspection[] }) {
             {/* Legend - Bottom Right */}
             <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-100">
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Legend</h4>
-                <div className="space-y-2.5">
+                <div className="space-y-2.5" role="list" aria-label="Map legend">
                     <LegendItem
                         label="Scheduled"
                         count={scheduledCount}
@@ -756,7 +893,7 @@ function MapPanel({ inspections }: { inspections: Inspection[] }) {
             {/* Location Badge - Top Right */}
             <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md border border-gray-100">
                 <div className="flex items-center gap-2">
-                    <MapPin className="size-4 text-gray-500" />
+                    <MapPin className="size-4 text-gray-500" aria-hidden="true" />
                     <span className="text-sm font-medium text-gray-900">Chicago, IL</span>
                 </div>
             </div>
@@ -772,8 +909,8 @@ function EmptyState({ searchQuery, workflowFilter }: { searchQuery: string; work
     const filterLabel = workflowFilter === "origination" ? "Origination" : workflowFilter === "servicing" ? "Servicing" : "";
 
     return (
-        <div className="flex flex-col items-center justify-center py-16 px-4">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+        <div className="flex flex-col items-center justify-center py-16 px-4" role="status">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4" aria-hidden="true">
                 <Search className="size-7 text-gray-400" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-1">No inspections found</h3>
@@ -882,9 +1019,10 @@ export default function InspectionsPage() {
                 <div className="flex items-center justify-between gap-4">
                     {/* Search Input */}
                     <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" aria-hidden="true" />
                         <input
-                            type="text"
+                            type="search"
+                            aria-label="Search inspections"
                             placeholder={isAdmin ? "Search by address, loan #, or inspector..." : "Search by address or loan #..."}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -897,33 +1035,39 @@ export default function InspectionsPage() {
                         {/* Workflow Filter */}
                         <WorkflowFilterToggle value={workflowFilter} onChange={setWorkflowFilter} />
 
-                        {/* Divider */}
-                        <div className="w-px h-8 bg-gray-200" />
+                        {/* Divider - decorative */}
+                        <div className="w-px h-8 bg-gray-200" aria-hidden="true" />
 
-                        {/* List / Map Toggle */}
-                        <div className="flex items-center bg-gray-100 p-1 rounded-lg">
+                        {/* List / Map Toggle - Accessible Segmented Control */}
+                        <div
+                            className="flex items-center bg-gray-100 p-1 rounded-lg"
+                            role="group"
+                            aria-label="View mode"
+                        >
                             <button
                                 onClick={() => setView("list")}
+                                aria-pressed={view === "list"}
                                 className={cx(
-                                    "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+                                    "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2",
                                     view === "list"
                                         ? "bg-white text-gray-900 shadow-sm"
                                         : "text-gray-500 hover:text-gray-700"
                                 )}
                             >
-                                <ListIcon className="size-4" />
+                                <ListIcon className="size-4" aria-hidden="true" />
                                 List
                             </button>
                             <button
                                 onClick={() => setView("map")}
+                                aria-pressed={view === "map"}
                                 className={cx(
-                                    "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+                                    "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2",
                                     view === "map"
                                         ? "bg-white text-gray-900 shadow-sm"
                                         : "text-gray-500 hover:text-gray-700"
                                 )}
                             >
-                                <MapIcon className="size-4" />
+                                <MapIcon className="size-4" aria-hidden="true" />
                                 Map
                             </button>
                         </div>

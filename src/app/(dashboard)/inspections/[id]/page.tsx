@@ -427,29 +427,139 @@ function ApproveModal({ isOpen, onClose, onConfirm }: { isOpen: boolean; onClose
     );
 }
 
-function RequestChangesModal({ isOpen, onClose, onSubmit }: { isOpen: boolean; onClose: () => void; onSubmit: (msg: string) => void }) {
-    const [message, setMessage] = useState("");
+interface RevisionIssue {
+    id: string;
+    label: string;
+    checked: boolean;
+}
+
+function RequestRevisionsModal({
+    isOpen,
+    onClose,
+    onSubmit,
+    inspectorName,
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    onSubmit: (issues: string[], otherNotes: string) => void;
+    inspectorName: string;
+}) {
+    const [issues, setIssues] = useState<RevisionIssue[]>([
+        { id: "photos", label: "Missing/Blurry Photos", checked: false },
+        { id: "comments", label: "Insufficient Comments", checked: false },
+        { id: "checklist", label: "Missed Checklist Items", checked: false },
+        { id: "other", label: "Other", checked: false },
+    ]);
+    const [otherNotes, setOtherNotes] = useState("");
+
+    const handleCheckboxChange = (id: string) => {
+        setIssues(prev =>
+            prev.map(issue =>
+                issue.id === id ? { ...issue, checked: !issue.checked } : issue
+            )
+        );
+    };
+
+    const handleSubmit = () => {
+        const selectedIssues = issues.filter(i => i.checked && i.id !== "other").map(i => i.label);
+        console.log("Revision request sent:", { issues: selectedIssues, otherNotes });
+        onSubmit(selectedIssues, otherNotes);
+        // Reset state
+        setIssues(prev => prev.map(i => ({ ...i, checked: false })));
+        setOtherNotes("");
+    };
+
+    const showOtherTextarea = issues.find(i => i.id === "other")?.checked;
+    const hasSelection = issues.some(i => i.checked);
 
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative z-10 mx-4 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-                <div className="flex size-12 items-center justify-center rounded-full bg-amber-100">
-                    <RotateCcw className="size-6 text-amber-600" />
+            <div className="relative z-10 mx-4 w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
+                {/* Header */}
+                <div className="px-6 py-5 border-b border-gray-200">
+                    <div className="flex items-start gap-4">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-100">
+                            <RotateCcw className="size-5 text-amber-600" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-semibold text-gray-900">Request Revisions from Inspector</h2>
+                            <p className="mt-1 text-sm text-gray-500">
+                                {inspectorName} will be notified to address these issues.
+                            </p>
+                        </div>
+                    </div>
                 </div>
-                <h2 className="mt-4 text-lg font-semibold text-gray-900">Request Changes</h2>
-                <p className="mt-2 text-sm text-gray-500">What needs to be fixed before approval?</p>
-                <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="e.g., Missing photo of bathroom..."
-                    className="mt-4 h-32 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                />
-                <div className="mt-6 flex gap-3">
-                    <Button color="secondary" size="md" className="flex-1" onClick={onClose}>Cancel</Button>
-                    <Button color="primary" size="md" className="flex-1" onClick={() => { onSubmit(message); setMessage(""); }}>Send Request</Button>
+
+                {/* Content */}
+                <div className="px-6 py-5">
+                    <p className="text-sm font-medium text-gray-700 mb-4">Select the issues that need to be addressed:</p>
+
+                    {/* Checkbox List */}
+                    <div className="space-y-3">
+                        {issues.map((issue) => (
+                            <label
+                                key={issue.id}
+                                className={cx(
+                                    "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                                    issue.checked
+                                        ? "border-amber-300 bg-amber-50"
+                                        : "border-gray-200 hover:bg-gray-50"
+                                )}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={issue.checked}
+                                    onChange={() => handleCheckboxChange(issue.id)}
+                                    className="size-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                                />
+                                <span className={cx(
+                                    "text-sm",
+                                    issue.checked ? "text-amber-900 font-medium" : "text-gray-700"
+                                )}>
+                                    {issue.label}
+                                </span>
+                            </label>
+                        ))}
+                    </div>
+
+                    {/* Other Textarea */}
+                    {showOtherTextarea && (
+                        <div className="mt-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Additional Details
+                            </label>
+                            <textarea
+                                value={otherNotes}
+                                onChange={(e) => setOtherNotes(e.target.value)}
+                                placeholder="Describe the specific issues that need to be addressed..."
+                                rows={4}
+                                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                            />
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-3">
+                    <Button color="secondary" size="md" className="flex-1" onClick={onClose}>
+                        Cancel
+                    </Button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={!hasSelection}
+                        className={cx(
+                            "flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors",
+                            hasSelection
+                                ? "bg-amber-600 text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+                                : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        )}
+                    >
+                        <Send className="size-4" />
+                        Send Request
+                    </button>
                 </div>
             </div>
         </div>
@@ -524,9 +634,10 @@ export default function InspectionDetailPage({ params }: { params: Promise<{ id:
         setIsApproveModalOpen(false);
     };
 
-    const handleRequestChanges = (message: string) => {
-        console.log("Requesting changes:", { id, message });
+    const handleRequestRevisions = (issues: string[], otherNotes: string) => {
+        console.log("Requesting revisions:", { id, issues, otherNotes, inspector: inspection.inspector?.fullName });
         setIsRequestChangesModalOpen(false);
+        alert(`Revision request sent to ${inspection.inspector?.fullName || "Inspector"}`);
     };
 
     // =========================================================================
@@ -616,19 +727,26 @@ export default function InspectionDetailPage({ params }: { params: Promise<{ id:
                                             </Button>
                                         </>
                                     )}
-                                    {isAdmin && inspection.status === "Pending Review" && (
+                                    {isAdmin && (
                                         <>
                                             <Button color="secondary" size="md" iconLeading={Printer}>Print Report</Button>
-                                            <Button color="secondary" size="md" iconLeading={RotateCcw} onClick={() => setIsRequestChangesModalOpen(true)}>
-                                                Request Changes
-                                            </Button>
-                                            <Button color="primary" size="md" iconLeading={CheckCircle2} onClick={() => setIsApproveModalOpen(true)}>
-                                                Approve
-                                            </Button>
+                                            {/* Request Changes - Available for Pending Review or Completed */}
+                                            {(inspection.status === "Pending Review" || inspection.status === "Completed") && (
+                                                <button
+                                                    onClick={() => setIsRequestChangesModalOpen(true)}
+                                                    className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700"
+                                                >
+                                                    <RotateCcw className="size-4" />
+                                                    Request Changes
+                                                </button>
+                                            )}
+                                            {/* Approve - Only for Pending Review */}
+                                            {inspection.status === "Pending Review" && (
+                                                <Button color="primary" size="md" iconLeading={CheckCircle2} onClick={() => setIsApproveModalOpen(true)}>
+                                                    Approve
+                                                </Button>
+                                            )}
                                         </>
-                                    )}
-                                    {isAdmin && inspection.status !== "Pending Review" && (
-                                        <Button color="secondary" size="md" iconLeading={Printer}>Print Report</Button>
                                     )}
                                 </>
                             )}
@@ -727,7 +845,12 @@ export default function InspectionDetailPage({ params }: { params: Promise<{ id:
             <GalleryModal isOpen={isGalleryOpen} onClose={() => setIsGalleryOpen(false)} />
             <SubmitModal isOpen={isSubmitModalOpen} onClose={() => setIsSubmitModalOpen(false)} onSubmit={handleSubmit} />
             <ApproveModal isOpen={isApproveModalOpen} onClose={() => setIsApproveModalOpen(false)} onConfirm={handleApprove} />
-            <RequestChangesModal isOpen={isRequestChangesModalOpen} onClose={() => setIsRequestChangesModalOpen(false)} onSubmit={handleRequestChanges} />
+            <RequestRevisionsModal
+                isOpen={isRequestChangesModalOpen}
+                onClose={() => setIsRequestChangesModalOpen(false)}
+                onSubmit={handleRequestRevisions}
+                inspectorName={inspection.inspector?.fullName || "Inspector"}
+            />
         </div>
     );
 }

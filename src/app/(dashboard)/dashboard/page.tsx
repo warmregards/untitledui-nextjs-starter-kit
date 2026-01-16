@@ -8,12 +8,14 @@ import {
     ArrowUpRight,
     Briefcase,
     Calendar,
+    Camera,
     Car,
     CheckCircle2,
     ClipboardCheck,
     ClipboardList,
     Clock,
     Download,
+    Eye,
     FileEdit,
     FileSignature,
     FileText,
@@ -22,9 +24,11 @@ import {
     MessageSquare,
     Navigation,
     Play,
+    PlayCircle,
     Route,
     ThumbsUp,
     TrendingUp,
+    X,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -45,6 +49,7 @@ import { AdminWizard } from "@/components/onboarding/admin-wizard";
 import { useUserRole } from "@/contexts/user-role-context";
 import { cx } from "@/utils/cx";
 import { INSPECTIONS } from "@/data/mock-data";
+import { InspectorDailyBrief } from "@/components/dashboard/inspector-daily-brief";
 import type { Inspection } from "@/types";
 
 // ============================================================================
@@ -84,7 +89,9 @@ interface PendingApproval {
     address: string;
     inspector: string;
     avatar?: string;
+    propertyPhoto: string;
     issueCount: number;
+    photoCount: number;
     submittedAt: string;
 }
 
@@ -214,7 +221,7 @@ const TOP_INSPECTORS: InspectorData[] = [
 // Mock Data - Admin
 // ============================================================================
 
-const ADMIN_STATS_BASE: Omit<StatCard, 'onClick'>[] = [
+const ADMIN_STATS: StatCard[] = [
     {
         title: "Total Inspections",
         value: "1,284",
@@ -240,13 +247,6 @@ const ADMIN_STATS_BASE: Omit<StatCard, 'onClick'>[] = [
         href: "/inspections?status=Scheduled",
         icon: Calendar,
     },
-    {
-        title: "Awaiting Approval",
-        value: "5",
-        context: "Awaiting approval",
-        icon: AlertCircle,
-        variant: "warning",
-    },
 ];
 
 const PENDING_APPROVALS: PendingApproval[] = [
@@ -255,8 +255,9 @@ const PENDING_APPROVALS: PendingApproval[] = [
         inspectionId: "123",
         address: "123 Oak Street, Austin TX",
         inspector: "John Doe",
-        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&face",
+        propertyPhoto: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=200&h=200&fit=crop",
         issueCount: 3,
+        photoCount: 45,
         submittedAt: "2h ago",
     },
     {
@@ -264,8 +265,9 @@ const PENDING_APPROVALS: PendingApproval[] = [
         inspectionId: "124",
         address: "456 Maple Avenue, Houston TX",
         inspector: "Sarah Miller",
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&face",
+        propertyPhoto: "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=200&h=200&fit=crop",
         issueCount: 1,
+        photoCount: 32,
         submittedAt: "4h ago",
     },
     {
@@ -273,8 +275,9 @@ const PENDING_APPROVALS: PendingApproval[] = [
         inspectionId: "125",
         address: "789 Pine Road, Dallas TX",
         inspector: "Mike Johnson",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&face",
+        propertyPhoto: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=200&h=200&fit=crop",
         issueCount: 5,
+        photoCount: 58,
         submittedAt: "6h ago",
     },
     {
@@ -282,7 +285,9 @@ const PENDING_APPROVALS: PendingApproval[] = [
         inspectionId: "126",
         address: "321 Cedar Lane, San Antonio TX",
         inspector: "Emily Chen",
+        propertyPhoto: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=200&h=200&fit=crop",
         issueCount: 2,
+        photoCount: 41,
         submittedAt: "8h ago",
     },
     {
@@ -290,8 +295,9 @@ const PENDING_APPROVALS: PendingApproval[] = [
         inspectionId: "127",
         address: "654 Birch Court, Fort Worth TX",
         inspector: "David Kim",
-        avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&face",
+        propertyPhoto: "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=200&h=200&fit=crop",
         issueCount: 0,
+        photoCount: 28,
         submittedAt: "1d ago",
     },
 ];
@@ -404,46 +410,6 @@ const RECENT_FEEDBACK: FeedbackItem[] = [
         property: "456 Maple Ave",
         action: "approved",
         time: "Yesterday",
-    },
-];
-
-// ============================================================================
-// Mock Data - Tomorrow's Inspections (for Inspector Daily Brief)
-// ============================================================================
-
-interface TomorrowInspection {
-    id: string;
-    address: string;
-    city: string;
-    time: string;
-    workflow: "ORIGINATION_MF" | "SERVICING_MBA";
-    type: string;
-}
-
-const TOMORROW_INSPECTIONS: TomorrowInspection[] = [
-    {
-        id: "t1",
-        address: "500 N Lake Shore Dr",
-        city: "Chicago, IL",
-        time: "08:30 AM",
-        workflow: "ORIGINATION_MF",
-        type: "Origination",
-    },
-    {
-        id: "t2",
-        address: "1200 S Michigan Ave",
-        city: "Chicago, IL",
-        time: "11:00 AM",
-        workflow: "SERVICING_MBA",
-        type: "Annual",
-    },
-    {
-        id: "t3",
-        address: "350 W Huron St",
-        city: "Chicago, IL",
-        time: "02:30 PM",
-        workflow: "ORIGINATION_MF",
-        type: "Origination",
     },
 ];
 
@@ -573,7 +539,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 const InspectionChart = ({ data }: { data: ChartDataPoint[] }) => {
     return (
-        <div className="h-64 w-full">
+        <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E9EAEB" vertical={false} />
@@ -589,6 +555,7 @@ const InspectionChart = ({ data }: { data: ChartDataPoint[] }) => {
                         tickLine={false}
                         tick={{ fill: "#717680", fontSize: 12 }}
                         dx={-10}
+                        tickCount={5}
                     />
                     <Tooltip content={<CustomTooltip />} />
                     <Line
@@ -765,8 +732,8 @@ const TopInspectorsLeaderboard = () => {
 // ============================================================================
 
 const PIPELINE_COLORS = {
-    origination: "#7F56D9", // Purple (Brand)
-    servicing: "#2563EB", // Blue
+    origination: "#7C3AED", // Violet-600 (Brand Purple)
+    servicing: "#DDD6FE", // Violet-200 (Light Lavender)
 };
 
 /**
@@ -875,14 +842,12 @@ function PipelineMixChart() {
 }
 
 /**
- * Risk Monitor - Two stat cards showing Closing Risk and SLA Breaches
- * Accessible: proper heading levels, WCAG AA compliant colors, aria-hidden icons
+ * Risk Monitor (Left Border Style) - Clean compact vertical list
+ * Uses colored left borders instead of background fills
  */
-function RiskMonitor() {
+function RiskMonitorCompact() {
     // Calculate risk metrics from INSPECTIONS
     const riskMetrics = useMemo(() => {
-        const now = new Date();
-
         // Closing Risk: Origination inspections due within 48 hours
         const closingRisk = INSPECTIONS.filter((i) => {
             if (i.workflow !== "ORIGINATION_MF") return false;
@@ -901,41 +866,27 @@ function RiskMonitor() {
     }, []);
 
     return (
-        <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-900">Risk Monitor</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
-                {/* Card 1: Closing Risk */}
-                <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
-                    <div className="flex items-start gap-3">
-                        <div className="flex size-10 items-center justify-center rounded-lg bg-rose-100">
-                            <AlertTriangle className="size-5 text-rose-700" aria-hidden="true" />
-                        </div>
-                        <div className="flex-1">
-                            <p className="text-xs font-medium text-rose-700">Closing Risk</p>
-                            <p className="text-2xl font-semibold text-rose-800">{riskMetrics.closingRisk}</p>
-                            <p className="text-xs text-rose-600">Deals at Risk</p>
-                        </div>
+        <div className="rounded-xl bg-white shadow-xs ring-1 ring-gray-200">
+            <div className="border-b border-gray-200 px-4 py-3">
+                <h3 className="text-sm font-semibold text-gray-900">Operational Risks</h3>
+            </div>
+            <div className="p-4 space-y-3">
+                {/* Row 1: Closing Risk - Straight left border */}
+                <div className="flex items-center justify-between border-l-4 border-rose-500 bg-gray-50 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                        <AlertTriangle className="size-4 text-rose-500" aria-hidden="true" />
+                        <span className="text-sm text-gray-700">Deals Closing (&lt;48h)</span>
                     </div>
-                    <p className="mt-3 text-xs text-rose-600">
-                        Origination inspections due within 48 hours
-                    </p>
+                    <span className="text-xl font-bold text-rose-600">{riskMetrics.closingRisk}</span>
                 </div>
 
-                {/* Card 2: SLA Monitor */}
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                    <div className="flex items-start gap-3">
-                        <div className="flex size-10 items-center justify-center rounded-lg bg-amber-100">
-                            <Clock className="size-5 text-amber-700" aria-hidden="true" />
-                        </div>
-                        <div className="flex-1">
-                            <p className="text-xs font-medium text-amber-700">SLA Monitor</p>
-                            <p className="text-2xl font-semibold text-amber-800">{riskMetrics.slaBreaches}</p>
-                            <p className="text-xs text-amber-600">SLA Breaches</p>
-                        </div>
+                {/* Row 2: SLA Risk - Straight left border */}
+                <div className="flex items-center justify-between border-l-4 border-amber-500 bg-gray-50 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                        <Clock className="size-4 text-amber-500" aria-hidden="true" />
+                        <span className="text-sm text-gray-700">SLA Breaches</span>
                     </div>
-                    <p className="mt-3 text-xs text-amber-600">
-                        Servicing inspections past scheduled date
-                    </p>
+                    <span className="text-xl font-bold text-amber-600">{riskMetrics.slaBreaches}</span>
                 </div>
             </div>
         </div>
@@ -943,144 +894,295 @@ function RiskMonitor() {
 }
 
 /**
- * DashboardMetrics - Combined component with Pipeline Mix + Risk Monitor
- * For Admin View only
+ * Pipeline Mix Compact - Stacked layout for narrow column
+ * Legend below chart instead of beside
  */
-function DashboardMetrics() {
+function PipelineMixCompact() {
+    // Calculate pipeline data from INSPECTIONS (exclude completed/cancelled)
+    const pipelineData = useMemo(() => {
+        const activeInspections = INSPECTIONS.filter(
+            (i) => i.status !== "Completed" && i.status !== "Cancelled"
+        );
+
+        const originationCount = activeInspections.filter(
+            (i) => i.workflow === "ORIGINATION_MF"
+        ).length;
+        const servicingCount = activeInspections.filter(
+            (i) => i.workflow === "SERVICING_MBA"
+        ).length;
+        const total = originationCount + servicingCount;
+
+        return {
+            data: [
+                { name: "Origination", value: originationCount, color: PIPELINE_COLORS.origination },
+                { name: "Servicing", value: servicingCount, color: PIPELINE_COLORS.servicing },
+            ],
+            originationCount,
+            servicingCount,
+            total,
+        };
+    }, []);
+
     return (
-        <section aria-labelledby="metrics-heading" className="mb-6">
-            <h2 id="metrics-heading" className="sr-only">
-                Pipeline and Risk Metrics
-            </h2>
-            <div className="grid gap-4 lg:grid-cols-2">
-                <PipelineMixChart />
-                <div className="rounded-xl bg-white p-5 shadow-xs ring-1 ring-gray-200">
-                    <RiskMonitor />
+        <div className="rounded-xl bg-white shadow-xs ring-1 ring-gray-200">
+            <div className="border-b border-gray-200 px-4 py-3">
+                <h3 className="text-sm font-semibold text-gray-900">Pipeline Mix</h3>
+                <p className="text-xs text-gray-500">Active by workflow</p>
+            </div>
+            <div className="p-4">
+                {/* Donut Chart - Maximized */}
+                <div className="relative mx-auto h-36 w-36">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                            <Pie
+                                data={pipelineData.data}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius="50%"
+                                outerRadius="80%"
+                                paddingAngle={2}
+                                dataKey="value"
+                            >
+                                {pipelineData.data.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                            </Pie>
+                        </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-2xl font-bold text-gray-900">{pipelineData.total}</span>
+                        <span className="text-xs text-gray-500">Active</span>
+                    </div>
+                </div>
+
+                {/* Legend - Compact Below Chart */}
+                <div className="mt-4 flex items-center justify-center gap-6">
+                    <div className="flex items-center gap-2">
+                        <span
+                            className="size-2.5 rounded-full bg-violet-600"
+                            aria-hidden="true"
+                        />
+                        <span className="text-xs text-gray-600">
+                            Orig. <span className="font-semibold text-violet-700">{pipelineData.originationCount}</span>
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span
+                            className="size-2.5 rounded-full bg-violet-200 ring-1 ring-violet-300"
+                            aria-hidden="true"
+                        />
+                        <span className="text-xs text-gray-600">
+                            Serv. <span className="font-semibold text-gray-900">{pipelineData.servicingCount}</span>
+                        </span>
+                    </div>
+                </div>
+
+                {/* Screen Reader Only: Data Summary */}
+                <div className="sr-only" role="img" aria-label="Pipeline mix chart">
+                    Chart showing {pipelineData.originationCount} Origination and{" "}
+                    {pipelineData.servicingCount} Servicing inspections currently active.
                 </div>
             </div>
-        </section>
+        </div>
     );
 }
 
-// ============================================================================
-// InspectorDailyBrief Component (Inspector View)
-// Tomorrow's Prep card with context badge and action buttons
-// ============================================================================
-
 /**
- * InspectorDailyBrief - "Prep Card" for tomorrow's inspections
- * Shows inspection count, context badge, and relevant action buttons
+ * ReviewInspectionModal - Modal for reviewing pending inspections
  */
-function InspectorDailyBrief() {
-    const inspections = TOMORROW_INSPECTIONS;
-    const totalCount = inspections.length;
-    const originationCount = inspections.filter((i) => i.workflow === "ORIGINATION_MF").length;
-    const servicingCount = inspections.filter((i) => i.workflow === "SERVICING_MBA").length;
+function ReviewInspectionModal({
+    isOpen,
+    onClose,
+    inspection,
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    inspection: PendingApproval | null;
+}) {
+    const [notes, setNotes] = useState("");
 
-    // Determine context badge
-    const hasOriginations = originationCount > 0;
-    const contextBadge = hasOriginations
-        ? { label: "Client Facing (Business Attire)", icon: "👔", bgColor: "bg-purple-100", textColor: "text-purple-800", borderColor: "border-purple-200" }
-        : { label: "Standard Site Walk (PPE Required)", icon: "🦺", bgColor: "bg-blue-100", textColor: "text-blue-800", borderColor: "border-blue-200" };
+    if (!isOpen || !inspection) return null;
 
-    if (totalCount === 0) {
-        return null;
-    }
+    const handleRequestRevisions = () => {
+        console.log("Request revisions for:", inspection.id, "Notes:", notes);
+        onClose();
+        setNotes("");
+    };
+
+    const handleApprove = () => {
+        console.log("Approved:", inspection.id, "Notes:", notes);
+        onClose();
+        setNotes("");
+    };
 
     return (
-        <section
-            aria-labelledby="daily-brief-heading"
-            className="mb-6 rounded-xl bg-gradient-to-r from-brand-50 to-purple-50 p-5 shadow-xs ring-1 ring-brand-200"
-        >
-            <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                    {/* Header */}
-                    <div className="flex items-center gap-3">
-                        <div className="flex size-10 items-center justify-center rounded-lg bg-brand-100">
-                            <Calendar className="size-5 text-brand-700" aria-hidden="true" />
-                        </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+            {/* Backdrop */}
+            <div
+                className="absolute inset-0 bg-black/50"
+                onClick={onClose}
+                aria-hidden="true"
+            />
+
+            {/* Modal */}
+            <div className="relative w-full max-w-lg rounded-xl bg-white shadow-xl">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                        Review Inspection
+                    </h2>
+                    <button
+                        onClick={onClose}
+                        className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                        aria-label="Close modal"
+                    >
+                        <X className="size-5" />
+                    </button>
+                </div>
+
+                {/* Body */}
+                <div className="px-6 py-5 space-y-5">
+                    {/* Property Info */}
+                    <div className="flex items-start gap-4">
+                        <img
+                            src={inspection.propertyPhoto}
+                            alt={inspection.address}
+                            className="size-16 rounded-lg object-cover"
+                        />
                         <div>
-                            <h2 id="daily-brief-heading" className="text-lg font-semibold text-gray-900">
-                                Tomorrow's Prep
-                            </h2>
-                            <p className="text-sm text-gray-600">
-                                {totalCount} Inspection{totalCount !== 1 ? "s" : ""} Scheduled
+                            <p className="font-medium text-gray-900">{inspection.address}</p>
+                            <p className="text-sm text-gray-500">
+                                Submitted by {inspection.inspector} • {inspection.submittedAt}
                             </p>
                         </div>
                     </div>
 
-                    {/* Context Badge */}
-                    <div className="mt-4">
-                        <span
-                            className={cx(
-                                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium",
-                                contextBadge.bgColor,
-                                contextBadge.textColor,
-                                contextBadge.borderColor
-                            )}
-                        >
-                            <span aria-hidden="true">{contextBadge.icon}</span>
-                            {contextBadge.label}
-                        </span>
-                    </div>
-
-                    {/* Inspection Breakdown (Screen Reader) */}
-                    <div className="sr-only">
-                        Tomorrow's schedule includes {originationCount} origination inspection{originationCount !== 1 ? "s" : ""} and{" "}
-                        {servicingCount} servicing inspection{servicingCount !== 1 ? "s" : ""}.
-                        {hasOriginations
-                            ? " Business attire is recommended for client-facing appointments."
-                            : " Standard PPE is required for site walks."}
-                    </div>
-                </div>
-
-                {/* Inspection List Preview */}
-                <div className="hidden w-64 lg:block">
-                    <div className="space-y-2">
-                        {inspections.slice(0, 3).map((inspection) => (
-                            <div
-                                key={inspection.id}
-                                className="flex items-center gap-2 rounded-lg bg-white/70 px-3 py-2 text-sm"
-                            >
-                                <span className="text-xs font-medium text-gray-500">{inspection.time}</span>
-                                <span className="truncate text-gray-700">{inspection.address}</span>
+                    {/* Summary Stats */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="rounded-lg bg-gray-50 px-4 py-3">
+                            <div className="flex items-center gap-2">
+                                <AlertTriangle className="size-4 text-amber-500" aria-hidden="true" />
+                                <span className="text-sm text-gray-600">Issues Found</span>
                             </div>
-                        ))}
+                            <p className="mt-1 text-xl font-bold text-gray-900">{inspection.issueCount}</p>
+                        </div>
+                        <div className="rounded-lg bg-gray-50 px-4 py-3">
+                            <div className="flex items-center gap-2">
+                                <Camera className="size-4 text-blue-500" aria-hidden="true" />
+                                <span className="text-sm text-gray-600">Photos</span>
+                            </div>
+                            <p className="mt-1 text-xl font-bold text-gray-900">{inspection.photoCount}</p>
+                        </div>
+                    </div>
+
+                    {/* Notes Textarea */}
+                    <div>
+                        <label htmlFor="admin-notes" className="block text-sm font-medium text-gray-700 mb-1.5">
+                            Admin Notes / Feedback
+                        </label>
+                        <textarea
+                            id="admin-notes"
+                            rows={3}
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            placeholder="Add feedback for the inspector..."
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                        />
                     </div>
                 </div>
-            </div>
 
-            {/* Action Buttons */}
-            <div className="mt-5 flex flex-wrap items-center gap-3">
-                {hasOriginations && (
-                    <Button
-                        color="secondary"
-                        size="sm"
-                        iconLeading={FileText}
-                        className="bg-white hover:bg-gray-50"
+                {/* Footer */}
+                <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
+                    <button
+                        onClick={handleRequestRevisions}
+                        className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100 transition-colors"
                     >
-                        Download Borrower Packets
-                    </Button>
-                )}
-                {servicingCount > 0 && (
-                    <Button
-                        color="secondary"
-                        size="sm"
-                        iconLeading={FileEdit}
-                        className="bg-white hover:bg-gray-50"
+                        Request Revisions
+                    </button>
+                    <button
+                        onClick={handleApprove}
+                        className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors"
                     >
-                        Review Prior Year Defects
-                    </Button>
-                )}
-                <Button
-                    color="primary"
-                    size="sm"
-                    iconLeading={Route}
-                >
-                    View Route on Map
-                </Button>
+                        Approve & Finalize
+                    </button>
+                </div>
             </div>
-        </section>
+        </div>
+    );
+}
+
+/**
+ * Awaiting Approval Compact - Clean sidebar widget
+ * Shows property photo and View button for each item
+ */
+function AwaitingApprovalCompact({
+    onViewClick,
+}: {
+    onViewClick: (item: PendingApproval) => void;
+}) {
+    // Show only first 4 items in compact view
+    const displayItems = PENDING_APPROVALS.slice(0, 4);
+    const remainingCount = PENDING_APPROVALS.length - displayItems.length;
+
+    return (
+        <div id="approvals-list" className="rounded-xl bg-white shadow-xs ring-1 ring-gray-200 scroll-mt-6">
+            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                <div className="flex items-center gap-2">
+                    <div className="flex size-6 items-center justify-center rounded-md bg-amber-50">
+                        <ClipboardCheck className="size-3.5 text-amber-600" aria-hidden="true" />
+                    </div>
+                    <h3 className="text-sm font-semibold text-gray-900">Awaiting Approval</h3>
+                </div>
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                    {PENDING_APPROVALS.length}
+                </span>
+            </div>
+            <div className="divide-y divide-gray-100">
+                {displayItems.map((item) => (
+                    <div
+                        key={item.id}
+                        className="flex items-center gap-3 px-4 py-3"
+                    >
+                        {/* Property Photo */}
+                        <img
+                            src={item.propertyPhoto}
+                            alt={item.address}
+                            className="size-10 shrink-0 rounded-md object-cover"
+                        />
+                        {/* Info */}
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-gray-900">
+                                {item.address}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-xs text-gray-500">{item.inspector}</span>
+                                <span className="text-xs text-gray-400">•</span>
+                                <span className="text-xs text-gray-400">{item.submittedAt}</span>
+                            </div>
+                        </div>
+                        {/* View Button */}
+                        <button
+                            onClick={() => onViewClick(item)}
+                            className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                        >
+                            <Eye className="size-3.5" aria-hidden="true" />
+                            View
+                        </button>
+                    </div>
+                ))}
+            </div>
+            {remainingCount > 0 && (
+                <div className="border-t border-gray-100 px-4 py-2">
+                    <Link
+                        href="/inspections?status=pending_review"
+                        className="flex items-center justify-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700"
+                    >
+                        View all {PENDING_APPROVALS.length}
+                        <ArrowUpRight className="size-3" aria-hidden="true" />
+                    </Link>
+                </div>
+            )}
+        </div>
     );
 }
 
@@ -1133,23 +1235,19 @@ const PendingApprovalItem = ({ item }: { item: PendingApproval }) => {
 
 const RouteMapWidget = () => {
     return (
-        <div className="rounded-xl bg-primary shadow-xs ring-1 ring-secondary">
-            <div className="flex items-center justify-between border-b border-secondary px-5 py-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex size-8 items-center justify-center rounded-lg bg-blue-100">
-                        <Navigation className="size-4 text-blue-600" />
-                    </div>
-                    <div>
-                        <h2 className="text-sm font-semibold text-primary">Today's Route</h2>
-                        <p className="text-xs text-tertiary">4 stops planned</p>
-                    </div>
+        <div className="h-[500px] rounded-xl bg-white border border-gray-200 overflow-hidden">
+            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                <div className="flex items-center gap-2">
+                    <Navigation className="size-4 text-blue-600" aria-hidden="true" />
+                    <h3 className="text-sm font-semibold text-gray-900">Route Map</h3>
                 </div>
+                <span className="text-xs text-gray-500">4 stops</span>
             </div>
-            {/* Map Placeholder */}
-            <div className="relative">
-                <div className="aspect-[3/4] w-full bg-gradient-to-b from-blue-50 to-blue-100">
+            {/* Map Placeholder - Fixed height minus header */}
+            <div className="relative h-[calc(100%-52px)]">
+                <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-blue-100">
                     {/* Stylized map background */}
-                    <svg className="absolute inset-0 h-full w-full" viewBox="0 0 200 280">
+                    <svg className="absolute inset-0 h-full w-full" viewBox="0 0 200 280" preserveAspectRatio="xMidYMid slice">
                         {/* Roads */}
                         <path
                             d="M20 50 L180 50 M20 100 L180 100 M20 150 L180 150 M20 200 L180 200 M20 250 L180 250"
@@ -1186,8 +1284,8 @@ const RouteMapWidget = () => {
                 <div className="absolute bottom-4 left-4 right-4">
                     <div className="flex items-center justify-between rounded-lg bg-white/95 px-4 py-3 shadow-lg backdrop-blur-sm">
                         <div className="flex items-center gap-2">
-                            <Car className="size-4 text-gray-600" />
-                            <span className="text-sm font-medium text-primary">Est. Drive Time</span>
+                            <Car className="size-4 text-gray-600" aria-hidden="true" />
+                            <span className="text-sm font-medium text-gray-900">Est. Drive Time</span>
                         </div>
                         <span className="text-sm font-semibold text-brand-600">2h 15m</span>
                     </div>
@@ -1374,21 +1472,17 @@ const ManagerFeedbackWidget = () => {
 
 const AdminDashboard = () => {
     const [timeRange, setTimeRange] = useState<TimeRange>("7days");
+    const [reviewModalOpen, setReviewModalOpen] = useState(false);
+    const [selectedInspection, setSelectedInspection] = useState<PendingApproval | null>(null);
 
     const chartData = timeRange === "7days" ? CHART_DATA_7_DAYS : CHART_DATA_30_DAYS;
     const chartSubtitle = timeRange === "7days" ? "Last 7 days" : "Last 30 days";
 
-    // Create admin stats with scroll handler for "Awaiting Approval"
-    const scrollToApprovals = () => {
-        document.getElementById("approvals-list")?.scrollIntoView({ behavior: "smooth" });
+    // Handle View button click in Awaiting Approval widget
+    const handleViewInspection = (item: PendingApproval) => {
+        setSelectedInspection(item);
+        setReviewModalOpen(true);
     };
-
-    const ADMIN_STATS: StatCard[] = ADMIN_STATS_BASE.map((stat) => {
-        if (stat.title === "Awaiting Approval") {
-            return { ...stat, onClick: scrollToApprovals };
-        }
-        return stat;
-    });
 
     return (
         <div className="p-6">
@@ -1410,86 +1504,360 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* Stats Grid - 4 Cards */}
-            <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Stats Grid - 3 Cards (removed Awaiting Approval stat) */}
+            <div className="mb-6 grid gap-4 sm:grid-cols-3">
                 {ADMIN_STATS.map((stat) => (
                     <StatCardComponent key={stat.title} stat={stat} />
                 ))}
             </div>
 
-            {/* Pipeline Mix + Risk Monitor */}
-            <DashboardMetrics />
+            {/* ================================================================
+                Main Content: Vertical Stack (KPI Band + Chart)
+            ================================================================ */}
+            <div className="flex flex-col gap-6">
+                {/* Row 1: KPI Band (3-column grid) */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Slot 1: Risk Monitor */}
+                    <RiskMonitorCompact />
 
-            {/* Main Chart */}
-            <div className="mb-6 rounded-xl bg-primary shadow-xs ring-1 ring-secondary">
-                <div className="flex items-center justify-between border-b border-secondary px-5 py-4">
-                    <div>
-                        <h2 className="text-sm font-semibold text-primary">Inspection Trends</h2>
-                        <p className="text-xs text-tertiary">{chartSubtitle}</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1.5">
-                                <span className="inline-block size-2.5 rounded-full bg-brand-600" />
-                                <span className="text-xs text-tertiary">Scheduled</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <span className="inline-block size-2.5 rounded-full bg-success-500" />
-                                <span className="text-xs text-tertiary">Completed</span>
-                            </div>
-                        </div>
-                        <TimeRangeToggle value={timeRange} onChange={setTimeRange} />
-                    </div>
-                </div>
-                <div className="p-5">
-                    <InspectionChart data={chartData} />
-                </div>
-            </div>
+                    {/* Slot 2: Pipeline Mix (Monochromatic Donut) */}
+                    <PipelineMixCompact />
 
-            {/* Density Row: Donut + Leaderboard */}
-            <div className="mb-6 grid gap-4 lg:grid-cols-3">
-                <InspectionMixChart />
-                <div className="lg:col-span-2">
-                    <TopInspectorsLeaderboard />
+                    {/* Slot 3: Awaiting Approval */}
+                    <AwaitingApprovalCompact onViewClick={handleViewInspection} />
                 </div>
-            </div>
 
-            {/* Action Required: Pending Approvals */}
-            <div id="approvals-list" className="rounded-xl bg-primary shadow-xs ring-1 ring-secondary scroll-mt-6">
-                <div className="flex items-center justify-between border-b border-secondary px-5 py-4">
-                    <div className="flex items-center gap-3">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-amber-50">
-                            <ClipboardCheck className="size-4 text-amber-600" />
-                        </div>
+                {/* Row 2: Inspection Trends (Full Width) */}
+                <div className="rounded-xl bg-primary shadow-xs ring-1 ring-secondary">
+                    <div className="flex items-center justify-between border-b border-secondary px-5 py-4">
                         <div>
-                            <h2 className="text-sm font-semibold text-primary">
-                                Action Required: Pending Approvals
-                            </h2>
-                            <p className="text-xs text-tertiary">
-                                {PENDING_APPROVALS.length} inspections awaiting your review
-                            </p>
+                            <h2 className="text-sm font-semibold text-primary">Inspection Trends</h2>
+                            <p className="text-xs text-tertiary">{chartSubtitle}</p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="inline-block size-2.5 rounded-full bg-brand-600" aria-hidden="true" />
+                                    <span className="text-xs text-tertiary">Scheduled</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="inline-block size-2.5 rounded-full bg-success-500" aria-hidden="true" />
+                                    <span className="text-xs text-tertiary">Completed</span>
+                                </div>
+                            </div>
+                            <TimeRangeToggle value={timeRange} onChange={setTimeRange} />
                         </div>
                     </div>
-                    <Link
-                        href="/inspections?status=Pending+Review"
-                        className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700"
-                    >
-                        View all
-                        <ArrowUpRight className="size-3" />
-                    </Link>
+                    <div className="p-5">
+                        <InspectionChart data={chartData} />
+                    </div>
                 </div>
-                <div className="divide-y divide-secondary">
-                    {PENDING_APPROVALS.map((item) => (
-                        <PendingApprovalItem key={item.id} item={item} />
-                    ))}
-                </div>
+
+                {/* Row 3: Top Inspectors Leaderboard (Full Width) */}
+                <TopInspectorsLeaderboard />
             </div>
+
+            {/* Review Inspection Modal */}
+            <ReviewInspectionModal
+                isOpen={reviewModalOpen}
+                onClose={() => setReviewModalOpen(false)}
+                inspection={selectedInspection}
+            />
         </div>
     );
 };
 
 // ============================================================================
-// Inspector Dashboard View
+// Inspector Stats Component - Monochrome Summary Cards
+// ============================================================================
+
+interface InspectorStatCard {
+    label: string;
+    value: number;
+    icon: typeof MapPin;
+}
+
+/**
+ * InspectorStats - Row of 3 monochrome summary cards
+ * Shows: Remaining Today, Active Now, Finished Today
+ */
+function InspectorStats() {
+    // Mock counts (in real app, would come from API/context)
+    const remainingToday = 3;
+    const activeNow = 1;
+    const finishedToday = 2;
+
+    const stats: InspectorStatCard[] = [
+        {
+            label: "Remaining",
+            value: remainingToday,
+            icon: MapPin,
+        },
+        {
+            label: "Active",
+            value: activeNow,
+            icon: PlayCircle,
+        },
+        {
+            label: "Completed",
+            value: finishedToday,
+            icon: CheckCircle2,
+        },
+    ];
+
+    return (
+        <div className="grid gap-4 sm:grid-cols-3">
+            {stats.map((stat) => {
+                const Icon = stat.icon;
+                return (
+                    <div
+                        key={stat.label}
+                        className="rounded-xl bg-white p-4 border border-gray-200"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-gray-500">{stat.label}</p>
+                                <p className="mt-1 text-2xl font-bold text-gray-900">
+                                    {stat.value}
+                                </p>
+                            </div>
+                            <Icon className="size-5 text-gray-900" aria-hidden="true" />
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+// ============================================================================
+// TodayRoute Widget - Wide Flight Cards with Actions
+// ============================================================================
+
+/**
+ * TodayRoute - Wide layout flight cards with action buttons
+ * Optimized for 2-column span with prominent actions
+ */
+function TodayRoute() {
+    return (
+        <div className="rounded-xl bg-white border border-gray-200">
+            <div className="border-b border-gray-200 px-5 py-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="flex size-8 items-center justify-center rounded-lg bg-brand-100">
+                            <Calendar className="size-4 text-brand-600" aria-hidden="true" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-900">Today's Route</h3>
+                            <p className="text-xs text-gray-500">{TODAY_SCHEDULE.length} stops planned</p>
+                        </div>
+                    </div>
+                    <Button
+                        color="secondary"
+                        size="sm"
+                        iconLeading={Navigation}
+                        href="#"
+                    >
+                        Open in Maps
+                    </Button>
+                </div>
+            </div>
+            <div className="divide-y divide-gray-100">
+                {TODAY_SCHEDULE.map((item) => {
+                    const isInProgress = item.status === "in_progress";
+                    return (
+                        <div
+                            key={item.id}
+                            className={cx(
+                                "flex items-center gap-4 px-5 py-4",
+                                isInProgress && "bg-brand-50"
+                            )}
+                        >
+                            {/* Time */}
+                            <div className="w-20 shrink-0">
+                                <span className="text-sm font-semibold text-gray-900">
+                                    {item.time}
+                                </span>
+                            </div>
+
+                            {/* Address + Details */}
+                            <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-gray-900">
+                                    {item.address}
+                                </p>
+                                <div className="mt-1 flex items-center gap-3">
+                                    <span className="flex items-center gap-1 text-xs text-gray-500">
+                                        <MapPin className="size-3" aria-hidden="true" />
+                                        {item.city}
+                                    </span>
+                                    <span
+                                        className={cx(
+                                            "rounded-full px-2 py-0.5 text-xs font-medium",
+                                            isInProgress
+                                                ? "bg-brand-100 text-brand-700"
+                                                : "bg-gray-100 text-gray-600"
+                                        )}
+                                    >
+                                        {item.type}
+                                    </span>
+                                    {isInProgress && (
+                                        <span className="rounded-full bg-brand-600 px-2 py-0.5 text-xs font-medium text-white">
+                                            In Progress
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-2 shrink-0">
+                                <Button
+                                    color="secondary"
+                                    size="sm"
+                                    iconLeading={Navigation}
+                                    href={`https://maps.google.com/?q=${encodeURIComponent(item.address + ", " + item.city)}`}
+                                >
+                                    Navigate
+                                </Button>
+                                <Button
+                                    color={isInProgress ? "primary" : "secondary"}
+                                    size="sm"
+                                    iconLeading={isInProgress ? Play : ArrowRight}
+                                    href={`/inspections/${item.id}`}
+                                >
+                                    {isInProgress ? "Resume" : "Start"}
+                                </Button>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+// ============================================================================
+// MyDrafts Widget - Compact List
+// ============================================================================
+
+/**
+ * MyDraftsCompact - Simple list of draft inspections
+ * Constrained height for sidebar use
+ */
+function MyDraftsCompact() {
+    return (
+        <div className="rounded-xl bg-white border border-gray-200 max-h-60 flex flex-col">
+            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 shrink-0">
+                <div className="flex items-center gap-2">
+                    <FileEdit className="size-4 text-gray-500" aria-hidden="true" />
+                    <h3 className="text-sm font-semibold text-gray-900">My Drafts</h3>
+                </div>
+                <span className="text-xs text-gray-500">{MY_DRAFTS.length}</span>
+            </div>
+            {MY_DRAFTS.length > 0 ? (
+                <div className="divide-y divide-gray-100 overflow-y-auto">
+                    {MY_DRAFTS.map((item) => (
+                        <Link
+                            key={item.id}
+                            href={`/inspections/${item.id}`}
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                        >
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium text-gray-900">
+                                    {item.address}
+                                </p>
+                                <p className="text-xs text-gray-500">{item.lastEdited}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="h-1.5 w-16 rounded-full bg-gray-100">
+                                    <div
+                                        className="h-full rounded-full bg-brand-500"
+                                        style={{ width: `${item.progress}%` }}
+                                    />
+                                </div>
+                                <span className="text-xs font-medium text-gray-600">
+                                    {item.progress}%
+                                </span>
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+            ) : (
+                <div className="py-6 text-center">
+                    <p className="text-sm text-gray-500">No drafts</p>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ============================================================================
+// ManagerFeedback Widget - Compact List
+// ============================================================================
+
+/**
+ * ManagerFeedbackCompact - Simple list of recent feedback
+ * Constrained height for sidebar use
+ */
+function ManagerFeedbackCompact() {
+    return (
+        <div className="rounded-xl bg-white border border-gray-200 max-h-60 flex flex-col">
+            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 shrink-0">
+                <div className="flex items-center gap-2">
+                    <MessageSquare className="size-4 text-gray-500" aria-hidden="true" />
+                    <h3 className="text-sm font-semibold text-gray-900">Manager Feedback</h3>
+                </div>
+                <span className="text-xs text-gray-500">{RECENT_FEEDBACK.length}</span>
+            </div>
+            <div className="divide-y divide-gray-100 overflow-y-auto">
+                {RECENT_FEEDBACK.map((item) => {
+                    const needsChanges = item.action === "changes_requested";
+                    return (
+                        <div
+                            key={item.id}
+                            className={cx(
+                                "px-4 py-3",
+                                needsChanges && "bg-amber-50"
+                            )}
+                        >
+                            <div className="flex items-start gap-3">
+                                <Avatar
+                                    size="xs"
+                                    src={item.managerAvatar}
+                                    alt={item.manager}
+                                    initials={item.manager
+                                        .split(" ")
+                                        .map((n) => n[0])
+                                        .join("")}
+                                />
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium text-gray-900">
+                                            {item.property}
+                                        </span>
+                                        {needsChanges && (
+                                            <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                                                Action
+                                            </span>
+                                        )}
+                                    </div>
+                                    {item.comment && (
+                                        <p className="mt-0.5 text-xs text-gray-600 truncate">
+                                            "{item.comment}"
+                                        </p>
+                                    )}
+                                    <p className="mt-0.5 text-xs text-gray-400">{item.time}</p>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+// ============================================================================
+// Inspector Dashboard View - "Agenda-First" Layout
 // ============================================================================
 
 const InspectorDashboard = () => {
@@ -1512,111 +1880,38 @@ const InspectorDashboard = () => {
                 </p>
             </div>
 
-            {/* Tomorrow's Prep - Daily Brief Card */}
-            <InspectorDailyBrief />
-
-            {/* Stats Grid - 3 Cards */}
-            <div className="mb-6 grid gap-4 sm:grid-cols-3">
-                {INSPECTOR_STATS.map((stat) => (
-                    <StatCardComponent key={stat.title} stat={stat} />
-                ))}
+            {/* Row 1: Inspector Stats (3 Monochrome Cards) */}
+            <div className="mb-6">
+                <InspectorStats />
             </div>
 
-            {/* Main Content Grid - 3 columns */}
-            <div className="grid gap-6 lg:grid-cols-12">
-                {/* Today's Schedule - 5 columns */}
-                <div className="lg:col-span-5">
-                    <div className="rounded-xl bg-primary shadow-xs ring-1 ring-secondary">
-                        <div className="flex items-center justify-between border-b border-secondary px-5 py-4">
-                            <div className="flex items-center gap-3">
-                                <div className="flex size-8 items-center justify-center rounded-lg bg-brand-100">
-                                    <Calendar className="size-4 text-brand-600" />
-                                </div>
-                                <div>
-                                    <h2 className="text-sm font-semibold text-primary">
-                                        Today's Schedule
-                                    </h2>
-                                    <p className="text-xs text-tertiary">
-                                        {TODAY_SCHEDULE.length} inspections planned
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="space-y-3 p-4">
-                            {TODAY_SCHEDULE.map((item) => (
-                                <ScheduleCard key={item.id} item={item} />
-                            ))}
-                        </div>
-                    </div>
+            {/* Row 2: Main Content - Agenda-First Layout (2/3 vs 1/3 Grid) */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* ============================================================
+                    Left Column (Span 2) - "The Main Stage"
+                    Primary focus: Today's and Tomorrow's agenda
+                ============================================================ */}
+                <div className="lg:col-span-2 space-y-6">
+                    {/* Today's Route (Wide Flight Cards with Actions) */}
+                    <TodayRoute />
+
+                    {/* Tomorrow's Route (Existing Timeline Widget) */}
+                    <InspectorDailyBrief />
                 </div>
 
-                {/* Route Map - 3 columns */}
-                <div className="lg:col-span-3">
+                {/* ============================================================
+                    Right Column (Span 1) - "Context Sidebar"
+                    Supporting content: Map, Drafts, Feedback
+                ============================================================ */}
+                <div className="space-y-6">
+                    {/* Route Map (Fixed 500px Height) */}
                     <RouteMapWidget />
-                </div>
 
-                {/* Sidebar: Drafts + Feedback - 4 columns */}
-                <div className="space-y-4 lg:col-span-4">
-                    {/* My Drafts */}
-                    <div className="rounded-xl bg-primary shadow-xs ring-1 ring-secondary">
-                        <div className="flex items-center justify-between border-b border-secondary px-5 py-4">
-                            <div className="flex items-center gap-3">
-                                <div className="flex size-8 items-center justify-center rounded-lg bg-gray-100">
-                                    <FileEdit className="size-4 text-gray-600" />
-                                </div>
-                                <div>
-                                    <h2 className="text-sm font-semibold text-primary">
-                                        My Drafts
-                                    </h2>
-                                    <p className="text-xs text-tertiary">
-                                        {MY_DRAFTS.length} incomplete reports
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="space-y-3 p-4">
-                            {MY_DRAFTS.length > 0 ? (
-                                MY_DRAFTS.map((item) => (
-                                    <DraftCard key={item.id} item={item} />
-                                ))
-                            ) : (
-                                <div className="py-8 text-center">
-                                    <FileEdit className="mx-auto size-8 text-gray-300" />
-                                    <p className="mt-2 text-sm text-tertiary">No drafts</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    {/* My Drafts (Constrained Height) */}
+                    <MyDraftsCompact />
 
-                    {/* Manager Feedback */}
-                    <ManagerFeedbackWidget />
-
-                    {/* Quick Actions */}
-                    <div className="rounded-xl bg-primary p-4 shadow-xs ring-1 ring-secondary">
-                        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-tertiary">
-                            Quick Actions
-                        </h3>
-                        <div className="space-y-2">
-                            <Button
-                                color="secondary"
-                                size="sm"
-                                className="w-full justify-start"
-                                iconLeading={ClipboardList}
-                                href="/inspections"
-                            >
-                                View All Inspections
-                            </Button>
-                            <Button
-                                color="secondary"
-                                size="sm"
-                                className="w-full justify-start"
-                                iconLeading={MapPin}
-                                href="/properties"
-                            >
-                                Browse Properties
-                            </Button>
-                        </div>
-                    </div>
+                    {/* Manager Feedback (Constrained Height) */}
+                    <ManagerFeedbackCompact />
                 </div>
             </div>
         </div>

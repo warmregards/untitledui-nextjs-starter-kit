@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
     AlertCircle,
+    AlertTriangle,
     ArrowRight,
     ArrowUpRight,
+    Briefcase,
     Calendar,
     Car,
     CheckCircle2,
@@ -13,10 +15,14 @@ import {
     Clock,
     Download,
     FileEdit,
+    FileSignature,
+    FileText,
+    HardHat,
     MapPin,
     MessageSquare,
     Navigation,
     Play,
+    Route,
     ThumbsUp,
     TrendingUp,
 } from "lucide-react";
@@ -38,6 +44,8 @@ import { Button } from "@/components/base/buttons/button";
 import { AdminWizard } from "@/components/onboarding/admin-wizard";
 import { useUserRole } from "@/contexts/user-role-context";
 import { cx } from "@/utils/cx";
+import { INSPECTIONS } from "@/data/mock-data";
+import type { Inspection } from "@/types";
 
 // ============================================================================
 // Types
@@ -107,6 +115,47 @@ interface FeedbackItem {
 }
 
 type TimeRange = "7days" | "30days";
+
+// ============================================================================
+// Date Helpers
+// ============================================================================
+
+function getToday(): Date {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return now;
+}
+
+function getTomorrow(): Date {
+    const tomorrow = getToday();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow;
+}
+
+function getYesterday(): Date {
+    const yesterday = getToday();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday;
+}
+
+function isWithinNextNHours(date: Date, hours: number): boolean {
+    const now = new Date();
+    const futureLimit = new Date(now.getTime() + hours * 60 * 60 * 1000);
+    return date >= now && date <= futureLimit;
+}
+
+function isPastDue(date: Date): boolean {
+    const today = getToday();
+    return date < today;
+}
+
+function isSameDay(date1: Date, date2: Date): boolean {
+    return (
+        date1.getFullYear() === date2.getFullYear() &&
+        date1.getMonth() === date2.getMonth() &&
+        date1.getDate() === date2.getDate()
+    );
+}
 
 // ============================================================================
 // Mock Data - Shared
@@ -355,6 +404,46 @@ const RECENT_FEEDBACK: FeedbackItem[] = [
         property: "456 Maple Ave",
         action: "approved",
         time: "Yesterday",
+    },
+];
+
+// ============================================================================
+// Mock Data - Tomorrow's Inspections (for Inspector Daily Brief)
+// ============================================================================
+
+interface TomorrowInspection {
+    id: string;
+    address: string;
+    city: string;
+    time: string;
+    workflow: "ORIGINATION_MF" | "SERVICING_MBA";
+    type: string;
+}
+
+const TOMORROW_INSPECTIONS: TomorrowInspection[] = [
+    {
+        id: "t1",
+        address: "500 N Lake Shore Dr",
+        city: "Chicago, IL",
+        time: "08:30 AM",
+        workflow: "ORIGINATION_MF",
+        type: "Origination",
+    },
+    {
+        id: "t2",
+        address: "1200 S Michigan Ave",
+        city: "Chicago, IL",
+        time: "11:00 AM",
+        workflow: "SERVICING_MBA",
+        type: "Annual",
+    },
+    {
+        id: "t3",
+        address: "350 W Huron St",
+        city: "Chicago, IL",
+        time: "02:30 PM",
+        workflow: "ORIGINATION_MF",
+        type: "Origination",
     },
 ];
 
@@ -669,6 +758,331 @@ const TopInspectorsLeaderboard = () => {
         </div>
     );
 };
+
+// ============================================================================
+// DashboardMetrics Component (Admin View)
+// Accessible donut chart with sr-only data summary + Risk Monitor cards
+// ============================================================================
+
+const PIPELINE_COLORS = {
+    origination: "#7F56D9", // Purple (Brand)
+    servicing: "#2563EB", // Blue
+};
+
+/**
+ * Pipeline Mix Donut Chart - Shows Origination vs Servicing split
+ * Accessible: includes sr-only data summary for screen readers
+ */
+function PipelineMixChart() {
+    // Calculate pipeline data from INSPECTIONS (exclude completed/cancelled)
+    const pipelineData = useMemo(() => {
+        const activeInspections = INSPECTIONS.filter(
+            (i) => i.status !== "Completed" && i.status !== "Cancelled"
+        );
+
+        const originationCount = activeInspections.filter(
+            (i) => i.workflow === "ORIGINATION_MF"
+        ).length;
+        const servicingCount = activeInspections.filter(
+            (i) => i.workflow === "SERVICING_MBA"
+        ).length;
+        const total = originationCount + servicingCount;
+
+        return {
+            data: [
+                { name: "Origination", value: originationCount, color: PIPELINE_COLORS.origination },
+                { name: "Servicing", value: servicingCount, color: PIPELINE_COLORS.servicing },
+            ],
+            originationCount,
+            servicingCount,
+            total,
+        };
+    }, []);
+
+    return (
+        <div className="rounded-xl bg-white shadow-xs ring-1 ring-gray-200">
+            <div className="border-b border-gray-200 px-5 py-4">
+                <h3 className="text-sm font-semibold text-gray-900">Pipeline Mix</h3>
+                <p className="text-xs text-gray-500">Active inspections by workflow</p>
+            </div>
+            <div className="p-5">
+                <div className="flex items-center gap-6">
+                    {/* Donut Chart */}
+                    <div className="relative h-32 w-32 shrink-0">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={pipelineData.data}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={35}
+                                    outerRadius={55}
+                                    paddingAngle={2}
+                                    dataKey="value"
+                                >
+                                    {pipelineData.data.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                </Pie>
+                            </PieChart>
+                        </ResponsiveContainer>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className="text-lg font-semibold text-gray-900">{pipelineData.total}</span>
+                            <span className="text-[10px] text-gray-500">Active</span>
+                        </div>
+                    </div>
+
+                    {/* Legend / Counts */}
+                    <div className="flex-1 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span
+                                    className="size-3 rounded-full"
+                                    style={{ backgroundColor: PIPELINE_COLORS.origination }}
+                                    aria-hidden="true"
+                                />
+                                <span className="text-sm text-gray-700">Origination</span>
+                            </div>
+                            <span className="text-sm font-semibold text-gray-900">
+                                {pipelineData.originationCount}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span
+                                    className="size-3 rounded-full"
+                                    style={{ backgroundColor: PIPELINE_COLORS.servicing }}
+                                    aria-hidden="true"
+                                />
+                                <span className="text-sm text-gray-700">Servicing</span>
+                            </div>
+                            <span className="text-sm font-semibold text-gray-900">
+                                {pipelineData.servicingCount}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Screen Reader Only: Data Summary */}
+                <div className="sr-only" role="img" aria-label="Pipeline mix chart">
+                    Chart showing {pipelineData.originationCount} Origination and{" "}
+                    {pipelineData.servicingCount} Servicing inspections currently active.
+                    Total of {pipelineData.total} inspections in pipeline.
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Risk Monitor - Two stat cards showing Closing Risk and SLA Breaches
+ * Accessible: proper heading levels, WCAG AA compliant colors, aria-hidden icons
+ */
+function RiskMonitor() {
+    // Calculate risk metrics from INSPECTIONS
+    const riskMetrics = useMemo(() => {
+        const now = new Date();
+
+        // Closing Risk: Origination inspections due within 48 hours
+        const closingRisk = INSPECTIONS.filter((i) => {
+            if (i.workflow !== "ORIGINATION_MF") return false;
+            if (i.status === "Completed" || i.status === "Cancelled") return false;
+            return isWithinNextNHours(new Date(i.scheduledDate), 48);
+        }).length;
+
+        // SLA Breaches: Servicing inspections that are past due
+        const slaBreaches = INSPECTIONS.filter((i) => {
+            if (i.workflow !== "SERVICING_MBA") return false;
+            if (i.status === "Completed" || i.status === "Cancelled") return false;
+            return isPastDue(new Date(i.scheduledDate));
+        }).length;
+
+        return { closingRisk, slaBreaches };
+    }, []);
+
+    return (
+        <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900">Risk Monitor</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+                {/* Card 1: Closing Risk */}
+                <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+                    <div className="flex items-start gap-3">
+                        <div className="flex size-10 items-center justify-center rounded-lg bg-rose-100">
+                            <AlertTriangle className="size-5 text-rose-700" aria-hidden="true" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-xs font-medium text-rose-700">Closing Risk</p>
+                            <p className="text-2xl font-semibold text-rose-800">{riskMetrics.closingRisk}</p>
+                            <p className="text-xs text-rose-600">Deals at Risk</p>
+                        </div>
+                    </div>
+                    <p className="mt-3 text-xs text-rose-600">
+                        Origination inspections due within 48 hours
+                    </p>
+                </div>
+
+                {/* Card 2: SLA Monitor */}
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <div className="flex items-start gap-3">
+                        <div className="flex size-10 items-center justify-center rounded-lg bg-amber-100">
+                            <Clock className="size-5 text-amber-700" aria-hidden="true" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-xs font-medium text-amber-700">SLA Monitor</p>
+                            <p className="text-2xl font-semibold text-amber-800">{riskMetrics.slaBreaches}</p>
+                            <p className="text-xs text-amber-600">SLA Breaches</p>
+                        </div>
+                    </div>
+                    <p className="mt-3 text-xs text-amber-600">
+                        Servicing inspections past scheduled date
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * DashboardMetrics - Combined component with Pipeline Mix + Risk Monitor
+ * For Admin View only
+ */
+function DashboardMetrics() {
+    return (
+        <section aria-labelledby="metrics-heading" className="mb-6">
+            <h2 id="metrics-heading" className="sr-only">
+                Pipeline and Risk Metrics
+            </h2>
+            <div className="grid gap-4 lg:grid-cols-2">
+                <PipelineMixChart />
+                <div className="rounded-xl bg-white p-5 shadow-xs ring-1 ring-gray-200">
+                    <RiskMonitor />
+                </div>
+            </div>
+        </section>
+    );
+}
+
+// ============================================================================
+// InspectorDailyBrief Component (Inspector View)
+// Tomorrow's Prep card with context badge and action buttons
+// ============================================================================
+
+/**
+ * InspectorDailyBrief - "Prep Card" for tomorrow's inspections
+ * Shows inspection count, context badge, and relevant action buttons
+ */
+function InspectorDailyBrief() {
+    const inspections = TOMORROW_INSPECTIONS;
+    const totalCount = inspections.length;
+    const originationCount = inspections.filter((i) => i.workflow === "ORIGINATION_MF").length;
+    const servicingCount = inspections.filter((i) => i.workflow === "SERVICING_MBA").length;
+
+    // Determine context badge
+    const hasOriginations = originationCount > 0;
+    const contextBadge = hasOriginations
+        ? { label: "Client Facing (Business Attire)", icon: "👔", bgColor: "bg-purple-100", textColor: "text-purple-800", borderColor: "border-purple-200" }
+        : { label: "Standard Site Walk (PPE Required)", icon: "🦺", bgColor: "bg-blue-100", textColor: "text-blue-800", borderColor: "border-blue-200" };
+
+    if (totalCount === 0) {
+        return null;
+    }
+
+    return (
+        <section
+            aria-labelledby="daily-brief-heading"
+            className="mb-6 rounded-xl bg-gradient-to-r from-brand-50 to-purple-50 p-5 shadow-xs ring-1 ring-brand-200"
+        >
+            <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                    {/* Header */}
+                    <div className="flex items-center gap-3">
+                        <div className="flex size-10 items-center justify-center rounded-lg bg-brand-100">
+                            <Calendar className="size-5 text-brand-700" aria-hidden="true" />
+                        </div>
+                        <div>
+                            <h2 id="daily-brief-heading" className="text-lg font-semibold text-gray-900">
+                                Tomorrow's Prep
+                            </h2>
+                            <p className="text-sm text-gray-600">
+                                {totalCount} Inspection{totalCount !== 1 ? "s" : ""} Scheduled
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Context Badge */}
+                    <div className="mt-4">
+                        <span
+                            className={cx(
+                                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium",
+                                contextBadge.bgColor,
+                                contextBadge.textColor,
+                                contextBadge.borderColor
+                            )}
+                        >
+                            <span aria-hidden="true">{contextBadge.icon}</span>
+                            {contextBadge.label}
+                        </span>
+                    </div>
+
+                    {/* Inspection Breakdown (Screen Reader) */}
+                    <div className="sr-only">
+                        Tomorrow's schedule includes {originationCount} origination inspection{originationCount !== 1 ? "s" : ""} and{" "}
+                        {servicingCount} servicing inspection{servicingCount !== 1 ? "s" : ""}.
+                        {hasOriginations
+                            ? " Business attire is recommended for client-facing appointments."
+                            : " Standard PPE is required for site walks."}
+                    </div>
+                </div>
+
+                {/* Inspection List Preview */}
+                <div className="hidden w-64 lg:block">
+                    <div className="space-y-2">
+                        {inspections.slice(0, 3).map((inspection) => (
+                            <div
+                                key={inspection.id}
+                                className="flex items-center gap-2 rounded-lg bg-white/70 px-3 py-2 text-sm"
+                            >
+                                <span className="text-xs font-medium text-gray-500">{inspection.time}</span>
+                                <span className="truncate text-gray-700">{inspection.address}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+                {hasOriginations && (
+                    <Button
+                        color="secondary"
+                        size="sm"
+                        iconLeading={FileText}
+                        className="bg-white hover:bg-gray-50"
+                    >
+                        Download Borrower Packets
+                    </Button>
+                )}
+                {servicingCount > 0 && (
+                    <Button
+                        color="secondary"
+                        size="sm"
+                        iconLeading={FileEdit}
+                        className="bg-white hover:bg-gray-50"
+                    >
+                        Review Prior Year Defects
+                    </Button>
+                )}
+                <Button
+                    color="primary"
+                    size="sm"
+                    iconLeading={Route}
+                >
+                    View Route on Map
+                </Button>
+            </div>
+        </section>
+    );
+}
 
 // ============================================================================
 // Admin-Only Components
@@ -1003,6 +1417,9 @@ const AdminDashboard = () => {
                 ))}
             </div>
 
+            {/* Pipeline Mix + Risk Monitor */}
+            <DashboardMetrics />
+
             {/* Main Chart */}
             <div className="mb-6 rounded-xl bg-primary shadow-xs ring-1 ring-secondary">
                 <div className="flex items-center justify-between border-b border-secondary px-5 py-4">
@@ -1094,6 +1511,9 @@ const InspectorDashboard = () => {
                     Here's your schedule for today.
                 </p>
             </div>
+
+            {/* Tomorrow's Prep - Daily Brief Card */}
+            <InspectorDailyBrief />
 
             {/* Stats Grid - 3 Cards */}
             <div className="mb-6 grid gap-4 sm:grid-cols-3">

@@ -1236,14 +1236,37 @@ const PendingApprovalItem = ({ item }: { item: PendingApproval }) => {
 // ============================================================================
 
 const RouteMapWidget = () => {
+    const [activeDay, setActiveDay] = useState<"today" | "tomorrow">("today");
+
     return (
         <div className="h-[500px] rounded-xl bg-white border border-gray-200 overflow-hidden">
             <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-                <div className="flex items-center gap-2">
-                    <Navigation className="size-4 text-blue-600" aria-hidden="true" />
-                    <h3 className="text-sm font-semibold text-gray-900">Route Map</h3>
+                <h3 className="text-sm font-semibold text-gray-900">Route Map</h3>
+                {/* Day Toggle */}
+                <div className="flex items-center rounded-lg bg-gray-100 p-1">
+                    <button
+                        onClick={() => setActiveDay("today")}
+                        className={cx(
+                            "rounded-md px-3 py-1 text-xs font-medium transition-all",
+                            activeDay === "today"
+                                ? "bg-white text-gray-900 shadow-sm"
+                                : "text-gray-600 hover:text-gray-900"
+                        )}
+                    >
+                        Today
+                    </button>
+                    <button
+                        onClick={() => setActiveDay("tomorrow")}
+                        className={cx(
+                            "rounded-md px-3 py-1 text-xs font-medium transition-all",
+                            activeDay === "tomorrow"
+                                ? "bg-white text-gray-900 shadow-sm"
+                                : "text-gray-600 hover:text-gray-900"
+                        )}
+                    >
+                        Tomorrow
+                    </button>
                 </div>
-                <span className="text-xs text-gray-500">4 stops</span>
             </div>
             {/* Map Placeholder - Fixed height minus header */}
             <div className="relative h-[calc(100%-52px)]">
@@ -1289,7 +1312,9 @@ const RouteMapWidget = () => {
                             <Car className="size-4 text-gray-600" aria-hidden="true" />
                             <span className="text-sm font-medium text-gray-900">Est. Drive Time</span>
                         </div>
-                        <span className="text-sm font-semibold text-brand-600">2h 15m</span>
+                        <span className="text-sm font-semibold text-brand-600">
+                            {activeDay === "today" ? "2h 15m" : "1h 45m"}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -1637,42 +1662,39 @@ function InspectorStats() {
 // ============================================================================
 
 /**
- * TodayRoute - Wide layout flight cards with action buttons
- * Optimized for 2-column span with prominent actions
+ * TodayRoute - Wide layout flight cards
+ * Standardized header matching TomorrowRoute
  */
 function TodayRoute() {
+    const totalMiles = 24; // Mock value
+
     return (
         <div className="rounded-xl bg-white border border-gray-200">
             <div className="border-b border-gray-200 px-5 py-4">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-brand-100">
-                            <Calendar className="size-4 text-brand-600" aria-hidden="true" />
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-semibold text-gray-900">Today's Route</h3>
-                            <p className="text-xs text-gray-500">{TODAY_SCHEDULE.length} stops planned</p>
-                        </div>
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-900">Today's Route</h3>
+                        <p className="text-sm text-gray-500">
+                            {new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
+                        </p>
                     </div>
-                    <Button
-                        color="secondary"
-                        size="sm"
-                        iconLeading={Navigation}
-                        href="#"
-                    >
-                        Open in Maps
-                    </Button>
+                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <span>{TODAY_SCHEDULE.length} Stops</span>
+                        <span className="text-gray-300">•</span>
+                        <span>{totalMiles} Miles</span>
+                    </div>
                 </div>
             </div>
             <div className="divide-y divide-gray-100">
                 {TODAY_SCHEDULE.map((item) => {
                     const isInProgress = item.status === "in_progress";
                     return (
-                        <div
+                        <Link
                             key={item.id}
+                            href={`/inspections/${item.id}`}
                             className={cx(
-                                "flex items-center gap-4 px-5 py-4",
-                                isInProgress && "bg-brand-50"
+                                "flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors",
+                                isInProgress && "bg-brand-50 hover:bg-brand-50"
                             )}
                         >
                             {/* Time */}
@@ -1688,8 +1710,7 @@ function TodayRoute() {
                                     {item.address}
                                 </p>
                                 <div className="mt-1 flex items-center gap-3">
-                                    <span className="flex items-center gap-1 text-xs text-gray-500">
-                                        <MapPin className="size-3" aria-hidden="true" />
+                                    <span className="text-xs text-gray-500">
                                         {item.city}
                                     </span>
                                     <span
@@ -1702,34 +1723,20 @@ function TodayRoute() {
                                     >
                                         {item.type}
                                     </span>
-                                    {isInProgress && (
-                                        <span className="rounded-full bg-brand-600 px-2 py-0.5 text-xs font-medium text-white">
-                                            In Progress
-                                        </span>
-                                    )}
                                 </div>
                             </div>
 
-                            {/* Actions */}
-                            <div className="flex items-center gap-2 shrink-0">
-                                <Button
-                                    color="secondary"
-                                    size="sm"
-                                    iconLeading={Navigation}
-                                    href={`https://maps.google.com/?q=${encodeURIComponent(item.address + ", " + item.city)}`}
-                                >
-                                    Navigate
-                                </Button>
-                                <Button
-                                    color={isInProgress ? "primary" : "secondary"}
-                                    size="sm"
-                                    iconLeading={isInProgress ? Play : ArrowRight}
-                                    href={`/inspections/${item.id}`}
-                                >
-                                    {isInProgress ? "Resume" : "Start"}
-                                </Button>
+                            {/* Status */}
+                            <div className="shrink-0">
+                                {isInProgress ? (
+                                    <span className="rounded-full bg-brand-600 px-3 py-1 text-xs font-medium text-white">
+                                        In Progress
+                                    </span>
+                                ) : (
+                                    <span className="text-xs text-gray-400">Scheduled</span>
+                                )}
                             </div>
-                        </div>
+                        </Link>
                     );
                 })}
             </div>
@@ -1798,20 +1805,24 @@ function MyDraftsCompact() {
 
 /**
  * ManagerFeedbackCompact - Simple list of recent feedback
- * Constrained height for sidebar use
+ * Limited to 5 items with View All link
  */
 function ManagerFeedbackCompact() {
+    const MAX_ITEMS = 5;
+    const displayItems = RECENT_FEEDBACK.slice(0, MAX_ITEMS);
+    const hasMore = RECENT_FEEDBACK.length > MAX_ITEMS;
+
     return (
-        <div className="rounded-xl bg-white border border-gray-200 max-h-60 flex flex-col">
-            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 shrink-0">
+        <div className="rounded-xl bg-white border border-gray-200 overflow-hidden">
+            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
                 <div className="flex items-center gap-2">
                     <MessageSquare className="size-4 text-gray-500" aria-hidden="true" />
                     <h3 className="text-sm font-semibold text-gray-900">Manager Feedback</h3>
                 </div>
                 <span className="text-xs text-gray-500">{RECENT_FEEDBACK.length}</span>
             </div>
-            <div className="divide-y divide-gray-100 overflow-y-auto">
-                {RECENT_FEEDBACK.map((item) => {
+            <div className="divide-y divide-gray-100">
+                {displayItems.map((item) => {
                     const needsChanges = item.action === "changes_requested";
                     return (
                         <div
@@ -1854,6 +1865,17 @@ function ManagerFeedbackCompact() {
                     );
                 })}
             </div>
+            {hasMore && (
+                <div className="border-t border-gray-100 px-4 py-2">
+                    <Link
+                        href="/feedback"
+                        className="flex items-center justify-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700"
+                    >
+                        View all {RECENT_FEEDBACK.length}
+                        <ArrowUpRight className="size-3" aria-hidden="true" />
+                    </Link>
+                </div>
+            )}
         </div>
     );
 }

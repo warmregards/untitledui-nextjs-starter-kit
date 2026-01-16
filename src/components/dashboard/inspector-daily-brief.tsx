@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import {
-    Calendar,
     Check,
-    CloudSun,
     DownloadCloud,
     MapPin,
     Navigation,
     Shirt,
 } from "lucide-react";
+import Link from "next/link";
 import { cx } from "@/utils/cx";
 
 // ============================================================================
@@ -24,6 +23,7 @@ interface RouteStop {
     workflow: "ORIGINATION_MF" | "SERVICING_MBA";
     type: string;
     driveTime: string;
+    status: "completed" | "current" | "upcoming";
 }
 
 // ============================================================================
@@ -39,6 +39,7 @@ const DAILY_ROUTE: RouteStop[] = [
         workflow: "ORIGINATION_MF",
         type: "Origination",
         driveTime: "Start",
+        status: "upcoming",
     },
     {
         id: "stop-2",
@@ -48,6 +49,7 @@ const DAILY_ROUTE: RouteStop[] = [
         workflow: "SERVICING_MBA",
         type: "Annual",
         driveTime: "25 min drive",
+        status: "upcoming",
     },
     {
         id: "stop-3",
@@ -57,6 +59,7 @@ const DAILY_ROUTE: RouteStop[] = [
         workflow: "SERVICING_MBA",
         type: "Move-Out",
         driveTime: "18 min drive",
+        status: "upcoming",
     },
     {
         id: "stop-4",
@@ -66,6 +69,7 @@ const DAILY_ROUTE: RouteStop[] = [
         workflow: "SERVICING_MBA",
         type: "Annual",
         driveTime: "12 min drive",
+        status: "upcoming",
     },
 ];
 
@@ -88,32 +92,47 @@ function getTomorrowDate(): string {
 // ============================================================================
 
 /**
- * Weather Pill - Mock weather display
+ * Attire Alert Banner - Subtle left border style
  */
-function WeatherPill() {
+function AttireAlertBanner({ stopNumber }: { stopNumber: number }) {
     return (
-        <div className="flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-sm">
-            <CloudSun className="size-4 text-amber-500" aria-hidden="true" />
-            <span className="text-amber-700">75°F</span>
-            <span className="text-amber-600">• Clear</span>
+        <div
+            className="flex items-center gap-2 border-l-4 border-purple-600 bg-white px-4 py-2.5"
+            role="alert"
+        >
+            <Shirt className="size-4 text-purple-600" aria-hidden="true" />
+            <span className="text-sm text-purple-700">
+                <span className="font-medium">Business Attire</span> for Stop #{stopNumber}
+            </span>
         </div>
     );
 }
 
 /**
- * Attire Alert Banner - Shows when origination stops are present
+ * Timeline Stepper - Untitled UI Style
  */
-function AttireAlertBanner({ stopNumber }: { stopNumber: number }) {
+function TimelineStepper({ status }: { status: RouteStop["status"] }) {
+    if (status === "completed") {
+        // Gray circle with check icon
+        return (
+            <div className="relative z-10 flex size-5 items-center justify-center rounded-full bg-gray-200 shrink-0">
+                <Check className="size-3 text-gray-600" />
+            </div>
+        );
+    }
+
+    if (status === "current") {
+        // White circle with colored ring
+        return (
+            <div className="relative z-10 flex size-5 items-center justify-center rounded-full bg-white ring-2 ring-brand-600 shrink-0">
+                <div className="size-2 rounded-full bg-brand-600" />
+            </div>
+        );
+    }
+
+    // Future: Empty gray ring
     return (
-        <div
-            className="flex items-center gap-2 rounded-lg bg-purple-50 border border-purple-200 px-4 py-2.5"
-            role="alert"
-        >
-            <Shirt className="size-4 text-purple-600" aria-hidden="true" />
-            <span className="text-sm text-purple-700">
-                <span className="font-medium">Business Attire Required</span> for Stop #{stopNumber} (Origination)
-            </span>
-        </div>
+        <div className="relative z-10 size-5 rounded-full border-2 border-gray-300 bg-white shrink-0" />
     );
 }
 
@@ -138,27 +157,14 @@ function TimelineStop({
 
     return (
         <div className="relative flex gap-4">
-            {/* Timeline Line & Dot */}
+            {/* Timeline Line & Stepper */}
             <div className="flex flex-col items-center">
-                {/* The Dot */}
-                <div
-                    className={cx(
-                        "relative z-10 flex size-4 items-center justify-center rounded-full shrink-0",
-                        isOrigination
-                            ? "bg-white ring-2 ring-purple-500"
-                            : "bg-blue-500"
-                    )}
-                    aria-hidden="true"
-                >
-                    {isOrigination && (
-                        <div className="size-2 rounded-full bg-purple-500" />
-                    )}
-                </div>
+                <TimelineStepper status={stop.status} />
 
-                {/* Connecting Line (dashed) */}
+                {/* Connecting Line */}
                 {!isLast && (
                     <div
-                        className="w-px flex-1 border-l-2 border-dashed border-gray-200 mt-1"
+                        className="w-px flex-1 bg-gray-200 mt-1"
                         aria-hidden="true"
                     />
                 )}
@@ -179,7 +185,7 @@ function TimelineStop({
                                     "rounded-full px-2 py-0.5 text-[10px] font-medium",
                                     isOrigination
                                         ? "bg-purple-100 text-purple-700"
-                                        : "bg-blue-100 text-blue-700"
+                                        : "bg-gray-100 text-gray-600"
                                 )}
                             >
                                 {stop.type}
@@ -187,7 +193,7 @@ function TimelineStop({
                         </div>
 
                         {/* Address */}
-                        <p className="mt-1 text-sm font-medium text-gray-700 truncate">
+                        <p className="mt-1 text-sm text-gray-700 truncate">
                             {stop.address}
                         </p>
 
@@ -289,59 +295,33 @@ export function InspectorDailyBrief() {
             className="rounded-xl bg-white shadow-xs ring-1 ring-gray-200 overflow-hidden"
         >
             {/* ================================================================
-                Header Section
+                Header Section - Standardized Style
             ================================================================ */}
             <div className="border-b border-gray-200 px-5 py-4">
-                <div className="flex items-start justify-between gap-4">
-                    {/* Left: Date & Calendar Icon */}
-                    <div className="flex items-center gap-3">
-                        <div className="flex size-10 items-center justify-center rounded-lg bg-brand-100">
-                            <Calendar className="size-5 text-brand-700" aria-hidden="true" />
-                        </div>
-                        <div>
-                            <h2 id="daily-brief-heading" className="text-base font-semibold text-gray-900">
-                                Tomorrow's Route
-                            </h2>
-                            <p className="text-sm text-gray-500">{getTomorrowDate()}</p>
-                        </div>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 id="daily-brief-heading" className="text-lg font-semibold text-gray-900">
+                            Tomorrow's Route
+                        </h2>
+                        <p className="text-sm text-gray-500">{getTomorrowDate()}</p>
                     </div>
 
-                    {/* Right: Weather Pill */}
-                    <WeatherPill />
-                </div>
-
-                {/* Main Stats */}
-                <div className="mt-4 flex items-center gap-6">
-                    <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-gray-900">{totalStops}</span>
-                        <span className="text-sm text-gray-500">Stops</span>
-                    </div>
-                    <div className="h-6 w-px bg-gray-200" aria-hidden="true" />
-                    <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-gray-900">{totalMiles}</span>
-                        <span className="text-sm text-gray-500">Miles</span>
-                    </div>
-                    <div className="h-6 w-px bg-gray-200" aria-hidden="true" />
-                    <div className="flex items-center gap-2">
-                        {allDownloaded ? (
-                            <div className="flex items-center gap-1.5 text-green-600">
-                                <Check className="size-5" aria-hidden="true" />
-                                <span className="text-sm font-medium">Ready for Offline</span>
-                            </div>
-                        ) : (
-                            <span className="text-sm text-gray-500">
-                                {downloadedCount}/{totalStops} downloaded
-                            </span>
-                        )}
+                    {/* Stats - Top Right */}
+                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <span>{totalStops} Stops</span>
+                        <span className="text-gray-300">•</span>
+                        <span>{totalMiles} Miles</span>
+                        <span className="text-gray-300">•</span>
+                        <span>{downloadedCount}/{totalStops} Downloaded</span>
                     </div>
                 </div>
             </div>
 
             {/* ================================================================
-                Attire Alert (Conditional)
+                Attire Alert (Conditional) - Subtle Style
             ================================================================ */}
             {hasOrigination && (
-                <div className="px-5 pt-4">
+                <div className="border-b border-gray-100">
                     <AttireAlertBanner stopNumber={firstOriginationIndex + 1} />
                 </div>
             )}
@@ -365,36 +345,35 @@ export function InspectorDailyBrief() {
             </div>
 
             {/* ================================================================
-                Footer Actions
+                Footer Actions - Download All Only
             ================================================================ */}
             <div className="border-t border-gray-200 px-5 py-3 bg-gray-50">
-                <div className="flex items-center justify-between">
-                    <button
-                        onClick={() => {
-                            // Download all stops
-                            const allIds = stops.map((s) => s.id);
-                            setDownloadedStops(new Set(allIds));
-                        }}
-                        disabled={allDownloaded}
-                        className={cx(
-                            "flex items-center gap-2 text-sm font-medium transition-colors",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
-                            allDownloaded
-                                ? "text-gray-400 cursor-not-allowed"
-                                : "text-brand-600 hover:text-brand-700"
-                        )}
-                    >
-                        <DownloadCloud className="size-4" aria-hidden="true" />
-                        Download All for Offline
-                    </button>
-
-                    <button
-                        className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
-                    >
-                        <Navigation className="size-4" aria-hidden="true" />
-                        Open in Maps
-                    </button>
-                </div>
+                <button
+                    onClick={() => {
+                        const allIds = stops.map((s) => s.id);
+                        setDownloadedStops(new Set(allIds));
+                    }}
+                    disabled={allDownloaded}
+                    className={cx(
+                        "flex items-center gap-2 text-sm font-medium transition-colors",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
+                        allDownloaded
+                            ? "text-green-600"
+                            : "text-brand-600 hover:text-brand-700"
+                    )}
+                >
+                    {allDownloaded ? (
+                        <>
+                            <Check className="size-4" aria-hidden="true" />
+                            All Downloaded for Offline
+                        </>
+                    ) : (
+                        <>
+                            <DownloadCloud className="size-4" aria-hidden="true" />
+                            Download All for Offline
+                        </>
+                    )}
+                </button>
             </div>
 
             {/* Screen Reader Summary */}

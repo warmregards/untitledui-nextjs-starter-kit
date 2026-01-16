@@ -862,31 +862,35 @@ function RiskMonitorCompact() {
             return isPastDue(new Date(i.scheduledDate));
         }).length;
 
-        return { closingRisk, slaBreaches };
+        // Unassigned Urgent: Mock count (urgent jobs with no inspector)
+        const unassignedUrgent = 1;
+
+        return { closingRisk, slaBreaches, unassignedUrgent };
     }, []);
 
     return (
         <div className="rounded-xl bg-white shadow-xs ring-1 ring-gray-200">
             <div className="border-b border-gray-200 px-4 py-3">
                 <h3 className="text-sm font-semibold text-gray-900">Operational Risks</h3>
+                <p className="text-xs text-gray-500">Action items requiring attention</p>
             </div>
-            <div className="p-4 space-y-3">
-                {/* Row 1: Closing Risk - Straight left border */}
+            <div className="p-4 flex flex-col justify-between gap-3">
+                {/* Row 1: Closing Risk */}
                 <div className="flex items-center justify-between border-l-4 border-rose-500 bg-gray-50 px-4 py-3">
-                    <div className="flex items-center gap-3">
-                        <AlertTriangle className="size-4 text-rose-500" aria-hidden="true" />
-                        <span className="text-sm text-gray-700">Deals Closing (&lt;48h)</span>
-                    </div>
+                    <span className="text-sm text-gray-700">Deals Closing (&lt;48h)</span>
                     <span className="text-xl font-bold text-rose-600">{riskMetrics.closingRisk}</span>
                 </div>
 
-                {/* Row 2: SLA Risk - Straight left border */}
+                {/* Row 2: SLA Breaches */}
                 <div className="flex items-center justify-between border-l-4 border-amber-500 bg-gray-50 px-4 py-3">
-                    <div className="flex items-center gap-3">
-                        <Clock className="size-4 text-amber-500" aria-hidden="true" />
-                        <span className="text-sm text-gray-700">SLA Breaches</span>
-                    </div>
+                    <span className="text-sm text-gray-700">SLA Breaches</span>
                     <span className="text-xl font-bold text-amber-600">{riskMetrics.slaBreaches}</span>
+                </div>
+
+                {/* Row 3: Unassigned Urgent */}
+                <div className="flex items-center justify-between border-l-4 border-brand-600 bg-gray-50 px-4 py-3">
+                    <span className="text-sm text-gray-700">Unassigned Urgent</span>
+                    <span className="text-xl font-bold text-brand-600">{riskMetrics.unassignedUrgent}</span>
                 </div>
             </div>
         </div>
@@ -927,19 +931,19 @@ function PipelineMixCompact() {
         <div className="rounded-xl bg-white shadow-xs ring-1 ring-gray-200">
             <div className="border-b border-gray-200 px-4 py-3">
                 <h3 className="text-sm font-semibold text-gray-900">Pipeline Mix</h3>
-                <p className="text-xs text-gray-500">Active by workflow</p>
+                <p className="text-xs text-gray-500">Active inspections by workflow</p>
             </div>
             <div className="p-4">
-                {/* Donut Chart - Maximized */}
-                <div className="relative mx-auto h-36 w-36">
+                {/* Donut Chart - Maximized to fill space */}
+                <div className="relative mx-auto h-44 w-44">
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
                                 data={pipelineData.data}
                                 cx="50%"
                                 cy="50%"
-                                innerRadius="50%"
-                                outerRadius="80%"
+                                innerRadius="55%"
+                                outerRadius="100%"
                                 paddingAngle={2}
                                 dataKey="value"
                             >
@@ -950,20 +954,20 @@ function PipelineMixCompact() {
                         </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-2xl font-bold text-gray-900">{pipelineData.total}</span>
+                        <span className="text-3xl font-bold text-gray-900">{pipelineData.total}</span>
                         <span className="text-xs text-gray-500">Active</span>
                     </div>
                 </div>
 
                 {/* Legend - Compact Below Chart */}
-                <div className="mt-4 flex items-center justify-center gap-6">
+                <div className="mt-3 flex items-center justify-center gap-6">
                     <div className="flex items-center gap-2">
                         <span
                             className="size-2.5 rounded-full bg-violet-600"
                             aria-hidden="true"
                         />
                         <span className="text-xs text-gray-600">
-                            Orig. <span className="font-semibold text-violet-700">{pipelineData.originationCount}</span>
+                            Origination <span className="font-semibold text-violet-700">{pipelineData.originationCount}</span>
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -972,7 +976,7 @@ function PipelineMixCompact() {
                             aria-hidden="true"
                         />
                         <span className="text-xs text-gray-600">
-                            Serv. <span className="font-semibold text-gray-900">{pipelineData.servicingCount}</span>
+                            Servicing <span className="font-semibold text-gray-900">{pipelineData.servicingCount}</span>
                         </span>
                     </div>
                 </div>
@@ -1127,11 +1131,9 @@ function AwaitingApprovalCompact({
     return (
         <div id="approvals-list" className="rounded-xl bg-white shadow-xs ring-1 ring-gray-200 scroll-mt-6">
             <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-                <div className="flex items-center gap-2">
-                    <div className="flex size-6 items-center justify-center rounded-md bg-amber-50">
-                        <ClipboardCheck className="size-3.5 text-amber-600" aria-hidden="true" />
-                    </div>
+                <div>
                     <h3 className="text-sm font-semibold text-gray-900">Awaiting Approval</h3>
+                    <p className="text-xs text-gray-500">Reports pending final review</p>
                 </div>
                 <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
                     {PENDING_APPROVALS.length}
